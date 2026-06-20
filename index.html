@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bruno & Sally — Getting Married!</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sun: #FFD166;
+      --coral: #EF767A;
+      --mint: #6BCB77;
+      --sky: #4D9DE0;
+      --cream: #FFF8F0;
+      --ink: #2D2A26;
+      --ink-light: #6B6560;
+      --white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: var(--cream);
+      border-bottom: 2px solid var(--sun);
+    }
+    .nav-logo {
+      font-family: 'Fraunces', serif;
+      font-size: 1.2rem;
+      color: var(--coral);
+      letter-spacing: 0.02em;
+    }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--coral); }
+
+    /* ── HERO ── */
+    #home {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Confetti dots — signature element */
+    .dot {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.55;
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-18px) rotate(15deg); }
+    }
+
+    .hero-eyebrow {
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-bottom: 1.2rem;
+    }
+    .hero-names {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(3.5rem, 10vw, 7rem);
+      font-weight: 300;
+      line-height: 1.0;
+      color: var(--ink);
+      margin-bottom: 0.3rem;
+    }
+    .hero-names em {
+      font-style: italic;
+      color: var(--coral);
+    }
+    .hero-ampersand {
+      display: block;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--sun);
+      margin: 0.1em 0;
+    }
+    .hero-date {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(1.1rem, 3vw, 1.6rem);
+      font-weight: 300;
+      color: var(--ink-light);
+      margin-top: 1.5rem;
+      letter-spacing: 0.06em;
+    }
+    .hero-location {
+      font-size: 0.95rem;
+      color: var(--ink-light);
+      margin-top: 0.4rem;
+    }
+    .hero-cta {
+      margin-top: 2.5rem;
+      display: inline-block;
+      background: var(--coral);
+      color: var(--white);
+      text-decoration: none;
+      padding: 0.85rem 2.2rem;
+      border-radius: 50px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .hero-cta:hover { background: #d95f63; transform: translateY(-2px); }
+
+    /* countdown */
+    .countdown {
+      display: flex; gap: 1.5rem;
+      margin-top: 2.8rem;
+      justify-content: center;
+    }
+    .countdown-unit {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .countdown-num {
+      font-family: 'Fraunces', serif;
+      font-size: 2.4rem;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--sky);
+    }
+    .countdown-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-light);
+      margin-top: 0.3rem;
+    }
+    .countdown-sep {
+      font-family: 'Fraunces', serif;
+      font-size: 2rem;
+      color: var(--sun);
+      align-self: flex-start;
+      margin-top: 0.2rem;
+    }
+
+    /* ── SECTION SHARED ── */
+    section { padding: 5rem 2rem; }
+    .section-inner { max-width: 780px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block;
+      background: var(--sun);
+      color: var(--ink);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.9rem;
+      border-radius: 50px;
+      margin-bottom: 1.2rem;
+    }
+    h2 {
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      line-height: 1.2;
+      margin-bottom: 1.2rem;
+    }
+    p { color: var(--ink-light); margin-bottom: 1rem; }
+
+    /* ── DETAILS ── */
+    #details { background: var(--white); }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+    .detail-card {
+      border-radius: 16px;
+      padding: 1.8rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .detail-card.ceremony  { background: #FFF0E8; border: 2px solid var(--coral); }
+    .detail-card.reception { background: #FFFBE8; border: 2px solid var(--sun); }
+    .detail-card.dress     { background: #E8F8EB; border: 2px solid var(--mint); }
+
+    .detail-card-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .detail-card h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 400;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
+    }
+    .detail-card p { font-size: 0.92rem; margin-bottom: 0.4rem; }
+    .detail-placeholder {
+      display: inline-block;
+      background: rgba(0,0,0,0.07);
+      border-radius: 4px;
+      padding: 0.1rem 0.5rem;
+      font-style: italic;
+      font-size: 0.85rem;
+      color: var(--ink-light);
+    }
+
+    /* ── RSVP ── */
+    #rsvp { background: var(--cream); }
+    .rsvp-form {
+      margin-top: 2rem;
+      background: var(--white);
+      border-radius: 20px;
+      padding: 2.5rem;
+      border: 2px solid var(--sun);
+    }
+    .form-row { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.4rem; }
+    label { font-size: 0.88rem; font-weight: 500; color: var(--ink); letter-spacing: 0.04em; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #E5E0D8;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      background: var(--cream);
+      color: var(--ink);
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--sky);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .rsvp-submit {
+      width: 100%;
+      background: var(--mint);
+      color: var(--ink);
+      border: none;
+      padding: 1rem;
+      border-radius: 50px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      margin-top: 0.5rem;
+    }
+    .rsvp-submit:hover { background: #52b85e; transform: translateY(-2px); }
+
+    /* ── FAQ ── */
+    #faq { background: var(--white); }
+    .faq-list { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+    .faq-item {
+      border-radius: 12px;
+      padding: 1.4rem 1.6rem;
+      background: var(--cream);
+      border-left: 4px solid var(--sky);
+    }
+    .faq-item h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 400;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+      color: var(--ink);
+    }
+    .faq-item p { font-size: 0.92rem; margin: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--ink);
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+    }
+    footer .footer-names {
+      font-family: 'Fraunces', serif;
+      font-size: 1.5rem;
+      font-weight: 300;
+      color: var(--sun);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 0.8rem 1.2rem; }
+      .nav-links { gap: 1.2rem; }
+      .form-row-2 { grid-template-columns: 1fr; }
+      .countdown { gap: 1rem; }
+      .rsvp-form { padding: 1.5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dot { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">B & S</span>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#details">Details</a></li>
+    <li><a href="#rsvp">RSVP</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="home">
+  <!-- floating dots -->
+  <div class="dot" style="width:60px;height:60px;background:var(--sun);top:12%;left:8%;animation-delay:0s;"></div>
+  <div class="dot" style="width:30px;height:30px;background:var(--coral);top:20%;right:10%;animation-delay:1.2s;"></div>
+  <div class="dot" style="width:45px;height:45px;background:var(--mint);bottom:22%;left:6%;animation-delay:0.7s;"></div>
+  <div class="dot" style="width:22px;height:22px;background:var(--sky);bottom:30%;right:8%;animation-delay:2s;"></div>
+  <div class="dot" style="width:35px;height:35px;background:var(--coral);top:60%;left:14%;animation-delay:1.8s;opacity:0.35;"></div>
+  <div class="dot" style="width:18px;height:18px;background:var(--sun);top:40%;right:18%;animation-delay:0.4s;opacity:0.4;"></div>
+
+  <p class="hero-eyebrow">You're invited to celebrate</p>
+  <h1 class="hero-names">
+    <em>Bruno</em>
+    <span class="hero-ampersand">&</span>
+    <em>Sally</em>
+  </h1>
+  <p class="hero-date">📅 <span class="detail-placeholder">Date TBC</span></p>
+  <p class="hero-location">📍 <span class="detail-placeholder">Venue, City</span></p>
+
+  <div class="countdown" id="countdown">
+    <div class="countdown-unit"><span class="countdown-num" id="cd-days">—</span><span class="countdown-label">Days</span></div>
+    <span class="countdown-sep">:</span>
+    <div class="countdown-unit"><span class="countdown-num" id="cd-hrs">—</span><span class="countdown-label">Hours</span></div>
+    <span class="countdown-sep">:</span>
+    <div class="countdown-unit"><span class="countdown-num" id="cd-min">—</span><span class="countdown-label">Minutes</span></div>
+  </div>
+
+  <a href="#rsvp" class="hero-cta">RSVP now 🎉</a>
+</section>
+
+<!-- DETAILS -->
+<section id="details">
+  <div class="section-inner">
+    <span class="section-tag">The day</span>
+    <h2>What's happening & when</h2>
+    <p>We can't wait to celebrate with you. Here's everything you need to know about the day.</p>
+
+    <div class="details-grid">
+      <div class="detail-card ceremony">
+        <div class="detail-card-icon">💍</div>
+        <h3>Ceremony</h3>
+        <p><strong>Time:</strong> <span class="detail-placeholder">e.g. 2:00 PM</span></p>
+        <p><strong>Venue:</strong> <span class="detail-placeholder">Venue name</span></p>
+        <p><span class="detail-placeholder">Address line 1, City, Postcode</span></p>
+      </div>
+
+      <div class="detail-card reception">
+        <div class="detail-card-icon">🥂</div>
+        <h3>Reception</h3>
+        <p><strong>Time:</strong> <span class="detail-placeholder">e.g. 4:00 PM</span></p>
+        <p><strong>Venue:</strong> <span class="detail-placeholder">Venue name</span></p>
+        <p><span class="detail-placeholder">Address line 1, City, Postcode</span></p>
+        <p><strong>Ends:</strong> <span class="detail-placeholder">e.g. Midnight</span></p>
+      </div>
+
+      <div class="detail-card dress">
+        <div class="detail-card-icon">👗</div>
+        <h3>Dress code</h3>
+        <p><span class="detail-placeholder">e.g. Smart casual / Black tie / Garden party</span></p>
+        <p style="margin-top:0.6rem; font-size:0.85rem;">Feel free to get colourful — we love it!</p>
+      </div>
+    </div>
+
+    <div style="margin-top:2.5rem; padding: 1.8rem; background:#EEF6FF; border-radius:16px; border: 2px solid var(--sky);">
+      <div class="detail-card-icon">🏨</div>
+      <h3 style="font-family:'Fraunces',serif; font-weight:400; font-size:1.2rem; margin-bottom:0.6rem;">Getting there & staying over</h3>
+      <p style="font-size:0.92rem;"><strong>Nearest station:</strong> <span class="detail-placeholder">Station name, X min walk</span></p>
+      <p style="font-size:0.92rem;"><strong>Parking:</strong> <span class="detail-placeholder">Available / details</span></p>
+      <p style="font-size:0.92rem;"><strong>Recommended hotels:</strong> <span class="detail-placeholder">Hotel name — add a link when ready</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- RSVP -->
+<section id="rsvp">
+  <div class="section-inner">
+    <span class="section-tag">RSVP</span>
+    <h2>Will you join us? 🎊</h2>
+    <p>Please let us know by <strong><span class="detail-placeholder">RSVP deadline date</span></strong>. We're so excited to celebrate with you.</p>
+
+    <div class="rsvp-form">
+      <div class="form-row-2">
+        <div class="form-row">
+          <label for="fname">First name</label>
+          <input type="text" id="fname" placeholder="Your first name" />
+        </div>
+        <div class="form-row">
+          <label for="lname">Last name</label>
+          <input type="text" id="lname" placeholder="Your last name" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="your@email.com" />
+      </div>
+
+      <div class="form-row">
+        <label for="attending">Will you be attending?</label>
+        <select id="attending">
+          <option value="">— Please choose —</option>
+          <option value="yes">Joyfully accepts 🎉</option>
+          <option value="no">Regretfully declines</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="meal">Meal preference</label>
+        <select id="meal">
+          <option value="">— Please choose —</option>
+          <option value="meat">Meat</option>
+          <option value="fish">Fish</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="dietary">Dietary requirements or allergies</label>
+        <input type="text" id="dietary" placeholder="e.g. Nut allergy, gluten free — or leave blank if none" />
+      </div>
+
+      <div class="form-row">
+        <label for="song">Song request 🎵</label>
+        <input type="text" id="song" placeholder="What will get you on the dancefloor?" />
+      </div>
+
+      <div class="form-row">
+        <label for="message">A message for Bruno & Sally (optional)</label>
+        <textarea id="message" placeholder="Anything you'd like to say…"></textarea>
+      </div>
+
+      <button class="rsvp-submit" onclick="handleRsvp()">Send my RSVP ✉️</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-inner">
+    <span class="section-tag">FAQ</span>
+    <h2>Good questions</h2>
+    <p>A few things people often wonder about. Get in touch if you have more!</p>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>Can I bring a plus one?</h3>
+        <p><span class="detail-placeholder">e.g. Your invitation will say if you have a plus one — please check your invite before RSVPing.</span></p>
+      </div>
+      <div class="faq-item">
+        <h3>Are children welcome?</h3>
+        <p><span class="detail-placeholder">e.g. We love your little ones! Children are welcome at the ceremony and reception. / This is an adults-only celebration — we hope you can arrange childcare and come enjoy a night off!</span></p>
+      </div>
+      <div class="faq-item">
+        <h3>What time should I arrive?</h3>
+        <p><span class="detail-placeholder">e.g. Please aim to be seated 15 minutes before the ceremony begins so we can start on time.</span></p>
+      </div>
+      <div class="faq-item">
+        <h3>Is there parking at the venue?</h3>
+        <p><span class="detail-placeholder">e.g. Yes, free parking is available on site / Parking is limited — we recommend the car park on X Street nearby.</span></p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I take photos?</h3>
+        <p><span class="detail-placeholder">e.g. We'd love you to! Please be mindful during the ceremony — our photographer will give a signal when it's camera time. Tag us with #BrunoAndSally!</span></p>
+      </div>
+      <div class="faq-item">
+        <h3>Any other questions?</h3>
+        <p>Drop us a message at <span class="detail-placeholder">your@email.com</span> and we'll get back to you.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-names">Bruno & Sally 💛</p>
+  <p><span class="detail-placeholder">Date TBC</span> · <span class="detail-placeholder">Venue, City</span></p>
+  <p style="margin-top:1rem;">Made with love (and a little help) 🌿</p>
+</footer>
+
+<script>
+  // Countdown timer — update this date when confirmed
+  const WEDDING_DATE = new Date('2026-01-01T14:00:00'); // ← placeholder date
+
+  function updateCountdown() {
+    const now = new Date();
+    const diff = WEDDING_DATE - now;
+    if (diff <= 0) {
+      document.getElementById('countdown').innerHTML = '<p style="font-family:Fraunces,serif;font-size:1.6rem;color:var(--coral)">Today\'s the day! 🎉</p>';
+      return;
+    }
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hrs  = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    document.getElementById('cd-days').textContent = String(days).padStart(2,'0');
+    document.getElementById('cd-hrs').textContent  = String(hrs).padStart(2,'0');
+    document.getElementById('cd-min').textContent  = String(mins).padStart(2,'0');
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 30000);
+
+  // RSVP handler — placeholder until backend is wired up
+  function handleRsvp() {
+    const fname = document.getElementById('fname').value.trim();
+    const attending = document.getElementById('attending').value;
+    if (!fname || !attending) {
+      alert('Please fill in your name and whether you\'ll be attending!');
+      return;
+    }
+    alert(`Thanks ${fname}! We've noted your RSVP. (Submission will be wired up to a backend soon.)`);
+  }
+</script>
+</body>
+</html>
