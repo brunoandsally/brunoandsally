@@ -119,7 +119,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(250,248,243,0.96);backdrop
 .sudoku-controls{display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem}
 
 /* ── KAKURO ── */
-.kakuro-grid{display:inline-grid;gap:0;border:2px solid var(--ink);margin-bottom:1.2rem}
+.kakuro-grid{display:grid;gap:0;border:2px solid var(--ink);margin-bottom:1.2rem;width:fit-content}
 .kk-cell{width:48px;height:48px;border:1px solid rgba(44,44,42,0.3);display:flex;align-items:center;justify-content:center;background:#fff;position:relative}
 .kk-cell.black{background:var(--ink)}
 .kk-cell.clue{background:var(--ink);position:relative;overflow:hidden}
@@ -810,53 +810,114 @@ function solveSudoku(){
 // ══════════════════════════════════════════
 //  KAKURO
 // ══════════════════════════════════════════
-// Pre-designed 7x7 kakuro puzzle
-var kakuroLayout = [
-  [{t:'black'},{t:'clue',r:0,d:3},{t:'clue',r:0,d:4},{t:'clue',r:0,d:0},{t:'clue',r:0,d:7},{t:'clue',r:0,d:8},{t:'black'}],
-  [{t:'clue',r:6,d:0},{t:'w'},{t:'w'},{t:'black'},{t:'w'},{t:'w'},{t:'clue',r:4,d:0}],
-  [{t:'clue',r:9,d:0},{t:'w'},{t:'w'},{t:'clue',r:4,d:6},{t:'w'},{t:'w'},{t:'w'}],
-  [{t:'black'},{t:'clue',r:0,d:5},{t:'black'},{t:'w'},{t:'w'},{t:'w'},{t:'black'}],
-  [{t:'clue',r:12,d:0},{t:'w'},{t:'clue',r:5,d:7},{t:'w'},{t:'black'},{t:'clue',r:3,d:0},{t:'w'}],
-  [{t:'clue',r:11,d:0},{t:'w'},{t:'w'},{t:'w'},{t:'clue',r:6,d:0},{t:'w'},{t:'w'}],
-  [{t:'black'},{t:'w'},{t:'w'},{t:'black'},{t:'w'},{t:'w'},{t:'black'}],
-];
-var kakuroSolution = [
-  [null,null,null,null,null,null,null],
-  [null,2,4,null,3,4,null],
-  [null,1,8,null,2,3,1],
-  [null,null,null,5,3,1,null],
-  [null,3,null,4,null,1,2],
-  [null,4,1,6,null,2,4],
-  [null,3,2,null,1,5,null],
+/*
+  Layout: B=black, C=clue cell {r:across, d:down}, W=white input cell
+  Solution values stored separately
+  Grid is 7 cols x 7 rows
+*/
+var KK_PUZZLES = [
+{
+  name: "Puzzle 1",
+  // W=white, B=black, C=clue with r(ight) and d(own) sums
+  layout: [
+    ['B',{t:'C',r:0,d:3},{t:'C',r:0,d:4},{t:'C',r:0,d:5},{t:'C',r:0,d:7},'B','B'],
+    [{t:'C',r:6,d:0},'W','W','W','W','B','B'],
+    [{t:'C',r:3,d:0},'W','W','B',{t:'C',r:0,d:4},{t:'C',r:0,d:6},'B'],
+    [{t:'C',r:7,d:0},'W','W','W','W','W',{t:'C',r:3,d:0}],
+    ['B','B',{t:'C',r:0,d:3},{t:'C',r:0,d:2},'W','W','W'],
+    ['B',{t:'C',r:4,d:0},'W','W','W','W','B'],
+    ['B','B','W','W','B','B','B'],
+  ],
+  solution: [
+    [null,null,null,null,null,null,null],
+    [null,1,2,3,4,null,null],
+    [null,1,2,null,1,3,null],
+    [null,2,3,1,4,6,null],
+    [null,null,null,null,2,1,3],
+    [null,1,2,4,3,null,null],
+    [null,null,1,2,null,null,null],
+  ]
+},
+{
+  name: "Puzzle 2",
+  layout: [
+    ['B','B',{t:'C',r:0,d:3},{t:'C',r:0,d:4},'B',{t:'C',r:0,d:7},'B'],
+    ['B',{t:'C',r:3,d:0},'W','W',{t:'C',r:0,d:3},'W','B'],
+    [{t:'C',r:6,d:0},'W','W','W','W','W','B'],
+    [{t:'C',r:4,d:0},'W','W','B',{t:'C',r:3,d:0},'W','W'],
+    ['B',{t:'C',r:0,d:4},{t:'C',r:0,d:3},'W','W','W','B'],
+    ['B','W','W','W','W','B','B'],
+    ['B','W','W','B','B','B','B'],
+  ],
+  solution: [
+    [null,null,null,null,null,null,null],
+    [null,null,1,2,null,3,null],
+    [null,1,2,3,4,2,null],
+    [null,3,1,null,null,2,4],
+    [null,null,null,1,2,3,null],
+    [null,1,4,3,2,null,null],
+    [null,1,3,null,null,null,null],
+  ]
+}
 ];
 
 var kakuroInputs=[];
+var kkCurrentPuzzle = 0;
 
-function newKakuro(){
-  var grid=document.getElementById('kakuro-grid');
-  grid.innerHTML='';
-  grid.style.gridTemplateColumns='repeat(7,1fr)';
-  kakuroInputs=[];
-  for(var r=0;r<7;r++){
+function newKakuro(puzzleIdx){
+  if(puzzleIdx !== undefined) kkCurrentPuzzle = puzzleIdx;
+  else kkCurrentPuzzle = Math.floor(Math.random() * KK_PUZZLES.length);
+  var puz = KK_PUZZLES[kkCurrentPuzzle];
+  var layout = puz.layout;
+  var rows = layout.length;
+  var cols = layout[0].length;
+
+  var grid = document.getElementById('kakuro-grid');
+  grid.innerHTML = '';
+  grid.setAttribute('style', 'display:grid;grid-template-columns:repeat('+cols+',48px);width:'+(cols*48)+'px;gap:0;border:2px solid #2C2C2A;margin-bottom:1.2rem');
+  kakuroInputs = [];
+
+  for(var r=0;r<rows;r++){
     kakuroInputs.push([]);
-    for(var c=0;c<7;c++){
-      var cell=document.createElement('div');
-      var spec=kakuroLayout[r][c];
-      if(spec.t==='black'){cell.className='kk-cell black';kakuroInputs[r].push(null);}
-      else if(spec.t==='clue'){
-        cell.className='kk-cell clue';
-        var inner=document.createElement('div');
-        inner.className='kk-clue-inner';
-        if(spec.r){var sp=document.createElement('span');sp.className='right';sp.textContent=spec.r;inner.appendChild(sp);}
-        if(spec.d){var sp2=document.createElement('span');sp2.className='down';sp2.textContent=spec.d;inner.appendChild(sp2);}
-        cell.appendChild(inner);
+    for(var c=0;c<cols;c++){
+      var spec = layout[r][c];
+      var cell = document.createElement('div');
+
+      if(spec === 'B'){
+        cell.className = 'kk-cell black';
         kakuroInputs[r].push(null);
-      } else {
-        cell.className='kk-cell';
-        var inp=document.createElement('input');
-        inp.type='text';inp.maxLength=1;
-        inp.dataset.r=r;inp.dataset.c=c;
-        inp.addEventListener('input',function(e){e.target.value=e.target.value.replace(/[^1-9]/,'').slice(-1)});
+      } else if(spec && spec.t === 'C'){
+        cell.className = 'kk-cell clue';
+        // diagonal line via CSS
+        cell.style.cssText = 'position:relative;overflow:hidden;background:#2C2C2A';
+        // diagonal
+        var line = document.createElement('div');
+        line.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;border-bottom:1px solid rgba(255,255,255,0.25);transform:rotate(-38deg) scale(2);pointer-events:none';
+        cell.appendChild(line);
+        if(spec.d){
+          var dn = document.createElement('span');
+          dn.style.cssText = 'position:absolute;top:3px;left:4px;color:#fff;font-size:0.6rem;font-weight:700;line-height:1;font-family:Jost,sans-serif';
+          dn.textContent = spec.d;
+          cell.appendChild(dn);
+        }
+        if(spec.r){
+          var rt = document.createElement('span');
+          rt.style.cssText = 'position:absolute;bottom:3px;right:4px;color:#fff;font-size:0.6rem;font-weight:700;line-height:1;font-family:Jost,sans-serif';
+          rt.textContent = spec.r;
+          cell.appendChild(rt);
+        }
+        kakuroInputs[r].push(null);
+      } else if(spec === 'W'){
+        cell.className = 'kk-cell';
+        var inp = document.createElement('input');
+        inp.type='text'; inp.maxLength=1;
+        inp.dataset.r=r; inp.dataset.c=c;
+        inp.style.cssText='width:100%;height:100%;border:none;background:transparent;text-align:center;font-family:"Cormorant Garamond",serif;font-size:1.1rem;color:var(--sky);outline:none;cursor:pointer';
+        inp.addEventListener('input',function(e){
+          e.target.value=e.target.value.replace(/[^1-9]/,'').slice(-1);
+        });
+        inp.addEventListener('focus',function(e){e.target.style.background='var(--sky-pale,#EAF3F9)'});
+        inp.addEventListener('blur',function(e){e.target.style.background='transparent'});
         cell.appendChild(inp);
         kakuroInputs[r].push(inp);
       }
@@ -867,34 +928,48 @@ function newKakuro(){
 }
 
 function checkKakuro(){
-  var allCorrect=true;
-  for(var r=0;r<7;r++)for(var c=0;c<7;c++){
-    var inp=kakuroInputs[r][c];
-    if(inp){
-      var parent=inp.parentElement;
-      parent.classList.remove('error','correct-cell');
-      var sol=kakuroSolution[r][c];
-      if(sol!==null){
-        if(parseInt(inp.value)===sol) parent.classList.add('correct-cell');
-        else{parent.classList.add('error');allCorrect=false;}
+  var puz = KK_PUZZLES[kkCurrentPuzzle];
+  var sol = puz.solution;
+  var allFilled = true, allCorrect = true;
+  for(var r=0;r<kakuroInputs.length;r++){
+    for(var c=0;c<kakuroInputs[r].length;c++){
+      var inp = kakuroInputs[r][c];
+      if(inp){
+        var parent = inp.parentElement;
+        parent.style.background = '#fff';
+        if(!inp.value){ allFilled=false; continue; }
+        if(parseInt(inp.value) === sol[r][c]){
+          parent.style.background = 'var(--sage-pale)';
+        } else {
+          parent.style.background = '#fdf0e8';
+          allCorrect=false;
+        }
       }
     }
   }
-  if(allCorrect) showMsg('kakuro-msg','🎉 Perfect! All sums check out!','success');
-  else showMsg('kakuro-msg','Some cells are incorrect.','error');
+  if(!allFilled) showMsg('kakuro-msg','Fill in all cells first!','info');
+  else if(allCorrect) showMsg('kakuro-msg','🎉 Perfect! All runs add up!','success');
+  else showMsg('kakuro-msg','Some cells are wrong — check your sums.','error');
 }
 
 function solveKakuro(){
-  for(var r=0;r<7;r++)for(var c=0;c<7;c++){
-    var inp=kakuroInputs[r][c];
-    if(inp&&kakuroSolution[r][c]){
-      inp.value=kakuroSolution[r][c];
-      inp.parentElement.classList.add('correct-cell');
+  var puz = KK_PUZZLES[kkCurrentPuzzle];
+  var sol = puz.solution;
+  for(var r=0;r<kakuroInputs.length;r++){
+    for(var c=0;c<kakuroInputs[r].length;c++){
+      var inp = kakuroInputs[r][c];
+      if(inp && sol[r][c]){
+        inp.value = sol[r][c];
+        inp.parentElement.style.background = 'var(--sage-pale)';
+      }
     }
   }
-  showMsg('kakuro-msg','Revealed! The sums all work out.','info');
+  showMsg('kakuro-msg','Solved! All the sums work out.','info');
 }
 
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
