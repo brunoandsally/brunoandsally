@@ -239,8 +239,12 @@ function toggleSpotify() {
 function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
 function closeDrawer()  { document.getElementById('drawer').classList.remove('open'); }
 
+// ── Handle redirect from 404.html (page refresh on deep link) ─
+var _redirect = sessionStorage.getItem('redirect-page');
+if (_redirect) { sessionStorage.removeItem('redirect-page'); }
+
 // ── Init ─────────────────────────────────────────────────────
-var initPage = getInitialPage();
+var initPage = _redirect || getInitialPage();
 currentPage = initPage;
 document.querySelectorAll('[data-page]').forEach(function(a) {
   a.classList.toggle('active', a.dataset.page === initPage);
