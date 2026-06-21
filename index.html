@@ -123,16 +123,16 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 <!-- NAV -->
 <nav id="nav">
   <div class="nav-inner">
-    <a class="nav-brand" onclick="nav('home')" href="/home">Bruno <span>&amp;</span> Sally</a>
+    <a class="nav-brand" onclick="nav('home');return false" href="/home">Bruno <span>&amp;</span> Sally</a>
     <ul class="nav-links" id="desktopNav">
-      <li><a onclick="nav('home')" href="/home" data-page="home">Home</a></li>
-      <li><a onclick="nav('the-day')" href="/the-day" data-page="the-day">The Day</a></li>
-      <li><a onclick="nav('our-story')" href="/our-story" data-page="our-story">Our Story</a></li>
-      <li><a onclick="nav('rsvp')" href="/rsvp" data-page="rsvp">RSVP</a></li>
-      <li><a onclick="nav('faq')" href="/faq" data-page="faq">FAQ</a></li>
-      <li><a onclick="nav('wedding-party')" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
-      <li><a onclick="nav('day-after')" href="/day-after" data-page="day-after">Sunday 19th</a></li>
-      <li><a onclick="nav('games')" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
+      <li><a onclick="nav('home');return false" href="/home" data-page="home">Home</a></li>
+      <li><a onclick="nav('the-day');return false" href="/the-day" data-page="the-day">The Day</a></li>
+      <li><a onclick="nav('our-story');return false" href="/our-story" data-page="our-story">Our Story</a></li>
+      <li><a onclick="nav('rsvp');return false" href="/rsvp" data-page="rsvp">RSVP</a></li>
+      <li><a onclick="nav('faq');return false" href="/faq" data-page="faq">FAQ</a></li>
+      <li><a onclick="nav('wedding-party');return false" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
+      <li><a onclick="nav('day-after');return false" href="/day-after" data-page="day-after">Sunday 19th</a></li>
+      <li><a onclick="nav('games');return false" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
     </ul>
     <button class="nav-burger" onclick="toggleDrawer()" aria-label="Menu">&#9776;</button>
   </div>
@@ -140,14 +140,14 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 
 <!-- MOBILE DRAWER -->
 <nav class="nav-drawer" id="drawer">
-  <a onclick="nav('home');closeDrawer()" href="/home">Home</a>
-  <a onclick="nav('the-day');closeDrawer()" href="/the-day">The Day</a>
-  <a onclick="nav('our-story');closeDrawer()" href="/our-story">Our Story</a>
-  <a onclick="nav('rsvp');closeDrawer()" href="/rsvp">RSVP</a>
-  <a onclick="nav('faq');closeDrawer()" href="/faq">FAQ</a>
-  <a onclick="nav('wedding-party');closeDrawer()" href="/wedding-party">Wedding Party</a>
-  <a onclick="nav('day-after');closeDrawer()" href="/day-after">Sunday 19th</a>
-  <a onclick="nav('games');closeDrawer()" href="/games" style="color:var(--warm-light)">Games 🎮</a>
+  <a onclick="nav('home');closeDrawer();return false" href="/home">Home</a>
+  <a onclick="nav('the-day');closeDrawer();return false" href="/the-day">The Day</a>
+  <a onclick="nav('our-story');closeDrawer();return false" href="/our-story">Our Story</a>
+  <a onclick="nav('rsvp');closeDrawer();return false" href="/rsvp">RSVP</a>
+  <a onclick="nav('faq');closeDrawer();return false" href="/faq">FAQ</a>
+  <a onclick="nav('wedding-party');closeDrawer();return false" href="/wedding-party">Wedding Party</a>
+  <a onclick="nav('day-after');closeDrawer();return false" href="/day-after">Sunday 19th</a>
+  <a onclick="nav('games');closeDrawer();return false" href="/games" style="color:var(--warm-light)">Games 🎮</a>
 </nav>
 
 <!-- PAGE LOADER BAR -->
@@ -171,13 +171,14 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 <script>
 var spOpen = false;
 var currentPage = '';
+var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
 
 // ── Navigation ──────────────────────────────────────────────
 function nav(page, pushState) {
-  if(page === currentPage) return;
+  if(!page || VALID.indexOf(page) < 0) page = 'home';
   currentPage = page;
 
-  // Update URL bar
+  // Prevent shell URL from changing — update cleanly
   if(pushState !== false) {
     history.pushState({page:page}, '', '/' + page);
   }
@@ -187,11 +188,11 @@ function nav(page, pushState) {
     a.classList.toggle('active', a.dataset.page === page);
   });
 
-  // Show loader
+  // Progress bar
   var loader = document.getElementById('page-loader');
   loader.className = 'loading';
 
-  // Load iframe
+  // Swap iframe src
   var frame = document.getElementById('content-frame');
   frame.classList.add('loading');
   frame.src = '/' + page;
@@ -199,22 +200,50 @@ function nav(page, pushState) {
     frame.classList.remove('loading');
     loader.className = 'done';
     setTimeout(function(){ loader.className = ''; }, 400);
-    // Scroll iframe to top
     try { frame.contentWindow.scrollTo(0,0); } catch(e){}
   };
 }
 
-// Handle browser back/forward
+// ── Listen for nav requests posted from inside the iframe ────
+// Content pages call: window.parent.postMessage({nav:'the-day'}, '*')
+window.addEventListener('message', function(e) {
+  if(e.data && e.data.nav) nav(e.data.nav);
+});
+
+// ── Intercept clicks inside the iframe ──────────────────────
+// When the iframe finishes loading, intercept any <a> clicks
+// that point to known shell routes
+document.getElementById('content-frame').addEventListener('load', function() {
+  try {
+    var iDoc = this.contentDocument || this.contentWindow.document;
+    iDoc.addEventListener('click', function(e) {
+      var a = e.target.closest('a');
+      if(!a) return;
+      var href = a.getAttribute('href') || '';
+      // Strip leading slash
+      var page = href.replace(/^\//, '').split('/')[0];
+      if(VALID.indexOf(page) >= 0) {
+        e.preventDefault();
+        nav(page);
+      }
+    });
+  } catch(err) {}
+  // Also expose nav to iframe window so onclick="parent.nav(...)" works
+  try {
+    this.contentWindow.parentNav = nav;
+  } catch(err) {}
+});
+
+// ── Browser back / forward ──────────────────────────────────
 window.addEventListener('popstate', function(e) {
   var page = (e.state && e.state.page) ? e.state.page : 'home';
   nav(page, false);
 });
 
-// Detect initial page from URL
+// ── Detect initial page from URL ────────────────────────────
 function getInitialPage() {
   var path = window.location.pathname.replace(/^\//, '').split('/')[0];
-  var valid = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
-  return valid.indexOf(path) >= 0 ? path : 'home';
+  return VALID.indexOf(path) >= 0 ? path : 'home';
 }
 
 // ── Spotify ──────────────────────────────────────────────────
