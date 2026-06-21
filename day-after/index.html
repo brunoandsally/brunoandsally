@@ -16,12 +16,12 @@ h2{font-family:"Cormorant Garamond",serif;font-weight:300;font-size:clamp(2rem,5
 footer{background:var(--ink);color:rgba(255,255,255,0.4);text-align:center;padding:2.5rem 1.5rem;font-size:0.77rem;letter-spacing:0.1em}
 .ft-name{font-family:"Cormorant Garamond",serif;font-size:1.4rem;font-weight:300;color:rgba(255,255,255,0.8);margin-bottom:0.4rem}
 .section{padding:5.5rem 2rem}.si{max-width:720px;margin:0 auto}
-.da-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0 2.5rem}
-.da-card{background:#fff;border:1px solid var(--line);border-radius:2px;padding:2rem}
+.da-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin:2rem 0 2.5rem}@media(max-width:700px){.da-grid{grid-template-columns:1fr}}
+.da-card{background:#fff;border:1px solid var(--line);border-radius:2px;padding:2rem;display:flex;flex-direction:column}
 .da-card .ic{font-size:2rem;margin-bottom:1rem}
 .da-card h3{font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:400;margin-bottom:0.8rem}
 .da-card p{color:var(--ink-soft);font-size:0.93rem;line-height:1.7}
-.da-card .opt{font-size:0.68rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--warm);margin-bottom:0.6rem}
+.da-card .opt{font-size:0.68rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--warm);margin-bottom:0.6rem}.timing{font-size:0.74rem;color:var(--ink-soft);font-style:italic;margin-top:auto;padding-top:0.8rem;border-top:1px solid var(--line)}
 @media(max-width:600px){.da-grid{grid-template-columns:1fr}}
 </style>
 </head><body>
@@ -44,18 +44,25 @@ footer{background:var(--ink);color:rgba(255,255,255,0.4);text-align:center;paddi
   <p style="font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-style:italic;color:var(--ink-soft);margin-bottom:2rem;line-height:1.6">Still standing? Excellent. Join us for a relaxed recovery day at Carswell.</p>
   <div class="da-grid">
     <div class="da-card">
+      <div class="ic">&#x1F30A;</div>
+      <p class="opt">For the brave</p>
+      <h3>Morning Swim</h3>
+      <p>A (late) morning dip for those who are up for it. The Devon sea is bracingly cold and entirely worth it. No pressure &mdash; but no sympathy for those who don&apos;t.</p>
+      <p class="timing">Timing TBC</p>
+    </div>
+    <div class="da-card">
       <div class="ic">&#x1F3C5;</div>
       <p class="opt">Optional</p>
       <h3>Sports Day</h3>
       <p>A gentle, entirely non-competitive programme of lawn games, mild exertion, and competitive spirit dressed up as fun. Teams TBC. Prizes unlikely to be proportionate to effort.</p>
-  <p style="margin-top:0.8rem;font-size:0.88rem;color:var(--ink-soft)">For those brave enough, there&#39;ll also be a (late) morning swim.</p>
-      <p style="font-size:0.78rem;font-style:italic;margin-top:0.8rem">We won&apos;t judge either way.</p>
+      <p class="timing">Timing TBC</p>
     </div>
     <div class="da-card">
       <div class="ic">&#x1F416;</div>
       <p class="opt">Essential</p>
       <h3>Hog Roast</h3>
       <p>We&apos;ll be firing up the hog roast in the same field &mdash; because the only thing better than yesterday&apos;s feast is today&apos;s. Come hungry.</p>
+      <p class="timing">Timing TBC</p>
     </div>
   </div>
   <div style="background:var(--sage-pale);border:1px solid var(--sage-light);border-radius:2px;padding:2rem;text-align:center;margin-bottom:2rem">
