@@ -976,27 +976,30 @@ newSudoku('easy');
 newKakuro();
 </script>
 <script>
-function shellNav(page) {
-  if(window.parent !== window) {
-    window.parent.postMessage({nav: page}, '*');
-  } else {
-    window.location.href = '/' + page;
-  }
-}
-// Also intercept all same-site links automatically
-document.addEventListener('click', function(e) {
-  var a = e.target.closest('a');
-  if(!a) return;
-  var href = a.getAttribute('href') || '';
-  if(href.startsWith('/') && !href.startsWith('//')) {
-    var page = href.replace(/^\//, '').split('/')[0];
-    var valid = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
-    if(valid.indexOf(page) >= 0) {
-      e.preventDefault();
-      shellNav(page);
+(function() {
+  var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
+  function shellNav(page) {
+    if (window.parent !== window) {
+      window.parent.postMessage({nav: page}, '*');
+    } else {
+      window.location.href = '/' + page;
     }
   }
-});
+  window.shellNav = shellNav;
+  // Intercept internal nav links
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (!href.startsWith('/') || href.startsWith('//')) return;
+    var page = href.replace(/^\//, '').split('/')[0];
+    if (VALID.indexOf(page) >= 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      shellNav(page);
+    }
+  }, true); // capture phase so it fires before any other handlers
+})();
 </script>
 </body>
 </html>
