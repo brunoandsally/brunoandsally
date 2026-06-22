@@ -557,38 +557,64 @@ var SEED_POLLS = [
   {question:'Does anyone get lost on the way to Newton Ferrers?', options:['At least 3 cars','Just one — and they know who','Nobody — Google Maps saves the day','Everyone arrives somehow']},
 ];
 
-async function loadPolls(){
+function loadPolls(){
   var grid = document.getElementById('poll-grid');
   grid.innerHTML = '<div class="loading">Loading predictions…</div>';
-  try {
-    var {data, error} = await supa.from('polls').select('*').order('created_at',{ascending:true});
-    if(error) throw error;
-    if(!data || data.length === 0){
-      await seedPolls();
-      try {
-        var res = await supa.from('polls').select('*').order('created_at',{ascending:true});
-        data = res.data || [];
-      } catch(e){ data = []; }
-    }
-    pollsCache = data;
-    renderPolls();
-  } catch(e){
-    var msg = (e && e.message) ? e.message : 'Could not load predictions.';
-    grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>'+msg+'</p></div>';
+
+  // Hard timeout — if nothing happens in 8s, show error
+  var timedOut = false;
+  var timer = setTimeout(function(){
+    timedOut = true;
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>Request timed out. Check browser console for details.</p></div>';
+  }, 8000);
+
+  if(!window.supabase){
+    clearTimeout(timer);
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>Supabase library not loaded. Check your internet connection.</p></div>';
+    return;
   }
+
+  supa.from('polls').select('*').order('created_at',{ascending:true})
+    .then(function(res){
+      if(timedOut) return;
+      clearTimeout(timer);
+      var data = res.data;
+      var error = res.error;
+      if(error){
+        grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>Error: '+error.message+'</p></div>';
+        return;
+      }
+      if(!data || data.length === 0){
+        seedPolls().then(function(){
+          return supa.from('polls').select('*').order('created_at',{ascending:true});
+        }).then(function(res2){
+          pollsCache = res2.data || [];
+          renderPolls();
+        }).catch(function(e){
+          grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>Seed failed: '+(e&&e.message?e.message:e)+'</p></div>';
+        });
+      } else {
+        pollsCache = data;
+        renderPolls();
+      }
+    })
+    .catch(function(e){
+      if(timedOut) return;
+      clearTimeout(timer);
+      grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>Failed: '+(e&&e.message?e.message:String(e))+'</p></div>';
+    });
 }
 
-async function seedPolls(){
-  try {
-    var rows = SEED_POLLS.map(function(p){
-      return {
-        question: p.question,
-        options: p.options.map(function(o){ return {text:o, votes:0}; })
-      };
-    });
-    var {error} = await supa.from('polls').insert(rows);
-    if(error) console.warn('seedPolls error:', error.message);
-  } catch(e){ console.warn('seedPolls failed:', e); }
+function seedPolls(){
+  var rows = SEED_POLLS.map(function(p){
+    return {
+      question: p.question,
+      options: p.options.map(function(o){ return {text:o, votes:0}; })
+    };
+  });
+  return supa.from('polls').insert(rows).then(function(res){
+    if(res.error) console.warn('seedPolls error:', res.error.message);
+  }).catch(function(e){ console.warn('seedPolls failed:', e); });
 }
 
 function renderPolls(){
