@@ -106,12 +106,13 @@ footer{background:var(--ink);color:rgba(255,255,255,0.4);text-align:center;paddi
     <div class="cdu"><span class="cdn-n" id="cd-d">&mdash;</span><span class="cdn-l">Days</span></div>
     <div class="cdu"><span class="cdn-n" id="cd-h">&mdash;</span><span class="cdn-l">Hours</span></div>
     <div class="cdu"><span class="cdn-n" id="cd-m">&mdash;</span><span class="cdn-l">Mins</span></div>
+    <div class="cdu"><span class="cdn-n" id="cd-s">&mdash;</span><span class="cdn-l">Secs</span></div>
   </div>
 </div>
 <script>
 var W=new Date("2027-09-18T12:30:00");
-function tick(){var d=W-new Date();if(d<=0)return;document.getElementById("cd-d").textContent=Math.floor(d/864e5);document.getElementById("cd-h").textContent=String(Math.floor(d%864e5/36e5)).padStart(2,"0");document.getElementById("cd-m").textContent=String(Math.floor(d%36e5/6e4)).padStart(2,"0");}
-tick();setInterval(tick,30000);
+function tick(){var d=W-new Date();if(d<=0)return;document.getElementById("cd-d").textContent=Math.floor(d/864e5);document.getElementById("cd-h").textContent=String(Math.floor(d%864e5/36e5)).padStart(2,"0");document.getElementById("cd-m").textContent=String(Math.floor(d%36e5/6e4)).padStart(2,"0");document.getElementById("cd-s").textContent=String(Math.floor(d%6e4/1e3)).padStart(2,"0");}
+tick();setInterval(tick,1000);
 setTimeout(function(){document.getElementById("hero").classList.add("loaded")},200);
 </script>
 
