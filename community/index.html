@@ -565,8 +565,10 @@ async function loadPolls(){
     if(error) throw error;
     if(!data || data.length === 0){
       await seedPolls();
-      var res = await supa.from('polls').select('*').order('created_at',{ascending:true});
-      data = res.data || [];
+      try {
+        var res = await supa.from('polls').select('*').order('created_at',{ascending:true});
+        data = res.data || [];
+      } catch(e){ data = []; }
     }
     pollsCache = data;
     renderPolls();
@@ -577,13 +579,16 @@ async function loadPolls(){
 }
 
 async function seedPolls(){
-  var rows = SEED_POLLS.map(function(p){
-    return {
-      question: p.question,
-      options: p.options.map(function(o){ return {text:o, votes:0}; })
-    };
-  });
-  await supa.from('polls').insert(rows);
+  try {
+    var rows = SEED_POLLS.map(function(p){
+      return {
+        question: p.question,
+        options: p.options.map(function(o){ return {text:o, votes:0}; })
+      };
+    });
+    var {error} = await supa.from('polls').insert(rows);
+    if(error) console.warn('seedPolls error:', error.message);
+  } catch(e){ console.warn('seedPolls failed:', e); }
 }
 
 function renderPolls(){
