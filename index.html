@@ -225,6 +225,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
       <li><a onclick="nav('wedding-party');return false" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
       <li><a onclick="nav('day-after');return false" href="/day-after" data-page="day-after">Sunday 19th</a></li>
       <li><a onclick="nav('games');return false" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
+      <li><a onclick="nav('community');return false" href="/community" data-page="community" class="games-link">The Board 💬</a></li>
     </ul>
     <button class="nav-burger" onclick="toggleDrawer()" aria-label="Menu">&#9776;</button>
   </div>
@@ -239,6 +240,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
   <a onclick="nav('wedding-party');closeDrawer();return false" href="/wedding-party">Wedding Party</a>
   <a onclick="nav('day-after');closeDrawer();return false" href="/day-after">Sunday 19th</a>
   <a onclick="nav('games');closeDrawer();return false" href="/games" style="color:var(--warm-light)">Games 🎮</a>
+  <a onclick="nav('community');closeDrawer();return false" href="/community" style="color:var(--warm-light)">The Board 💬</a>
 </nav>
 
 <!-- PAGE LOADER BAR -->
@@ -308,7 +310,7 @@ _gateObs.observe(document.getElementById('pw-gate'), {attributes:true});
 
 var spOpen = false;
 var currentPage = '';
-var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
+var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
 var frame = document.getElementById('content-frame');
 
 // ── Navigation ──────────────────────────────────────────────
