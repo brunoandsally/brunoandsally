@@ -15,15 +15,6 @@
   }
 })();
 </script>
-<script>
-// Redirect to shell if loaded directly (not in iframe)
-(function(){
-  if(window.self === window.top){
-    var page = window.location.pathname.replace(/^\//, '').split('/')[0];
-    window.location.replace('/' + (page ? '#' + page : ''));
-  }
-})();
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -308,11 +299,20 @@ function timeAgo(iso){
   return Math.floor(diff/86400)+'d ago';
 }
 
+var repliesCache = {};
+
 function loadPosts(){
-  supa.from('posts').select('*').order('created_at',{ascending:false}).limit(100)
+  supa.from('posts').select('*').order('created_at',{ascending:true}).limit(200)
     .then(function(res){
       if(res.error){ showPostsError(res.error.message); return; }
-      postsCache = (res.data||[]).filter(function(p){ return !p.reply_to; });
+      var all = res.data||[];
+      // Separate top-level from replies
+      postsCache = all.filter(function(p){ return !p.reply_to; }).reverse();
+      repliesCache = {};
+      all.filter(function(p){ return p.reply_to; }).forEach(function(r){
+        if(!repliesCache[r.reply_to]) repliesCache[r.reply_to] = [];
+        repliesCache[r.reply_to].push(r);
+      });
       renderPosts();
     }).catch(function(e){ showPostsError(e&&e.message?e.message:'Network error'); });
 }
@@ -369,8 +369,67 @@ function renderPosts(){
       reactDiv.appendChild(btn);
     });
     bubble.appendChild(reactDiv);
+
+    // Reply button
+    var replyBar = document.createElement('div');
+    replyBar.style.cssText = 'margin-top:0.5rem';
+    var replyBtn = document.createElement('button');
+    replyBtn.textContent = '↩ Reply';
+    replyBtn.style.cssText = 'border:none;background:none;font-size:0.72rem;color:var(--ink-soft);cursor:pointer;padding:0.15rem 0;font-family:"Jost",sans-serif;letter-spacing:0.06em';
+    (function(pid){ replyBtn.onclick = function(){ toggleReplyBox(pid); }; })(p.id);
+    replyBar.appendChild(replyBtn);
+    bubble.appendChild(replyBar);
+
+    // Inline reply compose (hidden by default)
+    var replyBox = document.createElement('div');
+    replyBox.id = 'rb-'+p.id;
+    replyBox.style.cssText = 'display:none;margin-top:0.5rem;gap:0.4rem;align-items:flex-end';
+    var replyInput = document.createElement('textarea');
+    replyInput.id = 'ri-'+p.id;
+    replyInput.placeholder = 'Write a reply…';
+    replyInput.maxLength = 200;
+    replyInput.rows = 2;
+    replyInput.style.cssText = 'flex:1;font-family:"Jost",sans-serif;font-size:0.86rem;border:1.5px solid var(--line);border-radius:6px;padding:0.4rem 0.6rem;background:#fff;color:var(--ink);resize:none;width:100%;box-sizing:border-box';
+    var sendBtn = document.createElement('button');
+    sendBtn.textContent = 'Send';
+    sendBtn.style.cssText = 'margin-top:0.4rem;padding:0.4rem 0.9rem;border:none;border-radius:4px;background:var(--sage);color:#fff;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap';
+    (function(pid){ sendBtn.onclick = function(){ submitReply(pid); }; })(p.id);
+    replyBox.appendChild(replyInput);
+    replyBox.appendChild(sendBtn);
+    bubble.appendChild(replyBox);
+
     card.appendChild(bubble);
-    list.appendChild(card);
+
+    // Existing replies (thread)
+    var replies = repliesCache[p.id]||[];
+    if(replies.length){
+      var thread = document.createElement('div');
+      thread.style.cssText = 'margin-top:0.5rem;margin-left:52px;border-left:2px solid var(--sage-pale);padding-left:0.75rem;display:flex;flex-direction:column;gap:0.4rem';
+      replies.forEach(function(r){
+        var rcard = document.createElement('div');
+        rcard.style.cssText = 'display:flex;gap:0.5rem;align-items:flex-start';
+        var rav = document.createElement('div');
+        rav.style.cssText = 'width:28px;height:28px;border-radius:50%;background:var(--stone);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0';
+        rav.textContent = r.emoji||'😊';
+        var rbubble = document.createElement('div');
+        rbubble.style.cssText = 'background:var(--stone);border-radius:0 8px 8px 8px;padding:0.45rem 0.7rem;flex:1;min-width:0';
+        var rmeta = document.createElement('div');
+        rmeta.style.cssText = 'margin-bottom:0.15rem';
+        rmeta.innerHTML = '<span style="font-weight:600;font-size:0.78rem">'+escHtml(r.name)+'</span> <span style="font-size:0.66rem;color:var(--ink-soft)">'+timeAgo(r.created_at)+'</span>';
+        var rtxt = document.createElement('div');
+        rtxt.style.cssText = 'font-size:0.86rem;line-height:1.4;word-break:break-word';
+        rtxt.textContent = r.message;
+        rbubble.appendChild(rmeta);
+        rbubble.appendChild(rtxt);
+        rcard.appendChild(rav);
+        rcard.appendChild(rbubble);
+        thread.appendChild(rcard);
+      });
+      list.appendChild(card);
+      list.appendChild(thread);
+    } else {
+      list.appendChild(card);
+    }
   });
 }
 
@@ -409,6 +468,38 @@ function reactPost(postId, reaction){
       localStorage.setItem('reacted_'+postId, JSON.stringify(reacted));
       loadPosts();
     }).catch(function(e){ console.warn('react failed',e); });
+}
+
+function toggleReplyBox(postId){
+  var box = document.getElementById('rb-'+postId);
+  if(!box) return;
+  var showing = box.style.display !== 'none';
+  box.style.display = showing ? 'none' : 'flex';
+  if(!showing){
+    var ri = document.getElementById('ri-'+postId);
+    if(ri) ri.focus();
+  }
+}
+
+function submitReply(postId){
+  var ri = document.getElementById('ri-'+postId);
+  var name = document.getElementById('msg-name').value.trim();
+  if(!ri) return;
+  var message = ri.value.trim();
+  if(!name){ alert('Enter your name in the message box above first.'); return; }
+  if(!message) return;
+  ri.disabled = true;
+  supa.from('posts').insert({name:name, message:message, emoji:selectedEmoji, reactions:{}, reply_to:postId})
+    .then(function(res){
+      if(res.error){ console.warn('Reply error:', res.error.message); ri.disabled=false; return; }
+      ri.value = '';
+      ri.disabled = false;
+      document.getElementById('rb-'+postId).style.display = 'none';
+      loadPosts();
+    }).catch(function(e){
+      console.warn('Reply failed:', e);
+      ri.disabled = false;
+    });
 }
 
 // ── POLLS ──────────────────────────────────────────────────
