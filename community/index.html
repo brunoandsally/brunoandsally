@@ -15,6 +15,15 @@
   }
 })();
 </script>
+<script>
+// Redirect to shell if loaded directly (not in iframe)
+(function(){
+  if(window.self === window.top){
+    var page = window.location.pathname.replace(/^\//, '').split('/')[0];
+    window.location.replace('/' + (page ? '#' + page : ''));
+  }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
