@@ -253,6 +253,8 @@ function switchTab(id, btn) {
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('panel-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
+  if(id==='predictions') loadPolls();
+  if(id==='messages') loadPosts();
 }
 
 // ── EMOJI SETUP ───────────────────────────────────────────
@@ -557,6 +559,7 @@ var SEED_POLLS = [
 
 async function loadPolls(){
   var grid = document.getElementById('poll-grid');
+  grid.innerHTML = '<div class="loading">Loading predictions…</div>';
   try {
     var {data, error} = await supa.from('polls').select('*').order('created_at',{ascending:true});
     if(error) throw error;
@@ -564,26 +567,11 @@ async function loadPolls(){
       await seedPolls();
       var res = await supa.from('polls').select('*').order('created_at',{ascending:true});
       data = res.data || [];
-    } else {
-      // Patch any existing poll that still has 'Best man Jamie'
-      for(var i=0; i<data.length; i++){
-        var p = data[i];
-        var needsPatch = p.options && p.options.some(function(o){ return o.text === 'Best man Jamie'; });
-        if(needsPatch){
-          var fixed = p.options.map(function(o){
-            return o.text === 'Best man Jamie' ? {text:'Groomsman Jamie', votes:o.votes||0} : o;
-          });
-          await supa.from('polls').update({options: fixed}).eq('id', p.id);
-          data[i].options = fixed;
-        }
-      }
     }
     pollsCache = data;
     renderPolls();
   } catch(e){
-    var msg = (e && e.message && e.message.includes('relation'))
-      ? 'Tables not set up yet — run the SQL in your Supabase dashboard first.'
-      : 'Could not load predictions.';
+    var msg = (e && e.message) ? e.message : 'Could not load predictions.';
     grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>'+msg+'</p></div>';
   }
 }
@@ -680,6 +668,10 @@ supa.channel('public:posts').on('postgres_changes',
 ).subscribe();
 
 // ── INIT ──────────────────────────────────────────────────
+// Lazy load — fetch when tab first opened, not on page load
+var pollsLoaded = false;
+var postsLoaded = false;
+// Predictions tab is active by default, so load polls immediately
 loadPolls();
 loadPosts();
 </script>
