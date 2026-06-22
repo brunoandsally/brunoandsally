@@ -3,19 +3,33 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Bruno & Sally — The Board</title>
+<title>Bruno & Sally — Games</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<script>
-(function(){
-  if(window.self === window.top){
-    var page = window.location.pathname.replace(/^\//, '').split('/')[0];
-    window.location.replace('/' + (page ? '#' + page : ''));
-  }
-})();
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+var SUPA_URL = 'https://zjynlhguilaoxrioysxn.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqeW5saGd1aWxhb3hyaW95c3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTMxMTksImV4cCI6MjA5NzcyOTExOX0.jwjX0wyaGnsns8Gy8q1XF-B7QIIAVKFtrMfl4SAZ1L0';
+var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function sbSaveScore(game, name, score, meta) {
+  try { await supa.from('scores').insert({game, name, score, meta}); }
+  catch(e) { console.warn('Supabase save failed', e); }
+}
+async function sbGetScores(game, limit) {
+  limit = limit || 10;
+  try {
+    var asc = game === 'minesweeper';
+    var {data} = await supa.from('scores')
+      .select('name,score,meta,created_at')
+      .eq('game', game)
+      .order('score', {ascending: asc})
+      .limit(limit);
+    return data || [];
+  } catch(e) { return []; }
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -24,501 +38,1957 @@
   --cream:#FAF8F3;--stone:#F0EBE1;
   --ink:#2C2C2A;--ink-soft:#5C5A56;
   --warm:#C4894A;--warm-light:#E8C49A;
-  --white:#fff;--line:rgba(44,44,42,0.12);
+  --white:#fff;--line:rgba(44,44,42,0.1);
+  --correct:#5C7A5C;--present:#C4894A;--absent:#8a8a8a;
 }
 html{scroll-behavior:smooth}
 body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;min-height:100vh}
-
-/* ── HERO ── */
-.hero{background:var(--ink);color:#fff;padding:3rem 2rem 2.5rem;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'💒 🥂 🌊 🦞 ☀️ 💐 🎉 🕺';position:absolute;top:0.5rem;left:0;right:0;font-size:1.4rem;opacity:0.12;letter-spacing:0.5rem;white-space:nowrap;overflow:hidden}
-.hero .eyebrow{font-size:0.68rem;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;color:var(--warm-light);margin-bottom:0.7rem}
-.hero h1{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,5vw,3rem);font-weight:300;line-height:1;margin-bottom:0.4rem}
-.hero p{color:rgba(255,255,255,0.5);font-size:0.88rem;max-width:40ch;margin:0 auto}
-
-/* ── TABS ── */
-.tabs{display:flex;justify-content:center;background:var(--stone);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:0;z-index:10}
-.tab-btn{padding:0.9rem 1.4rem;background:none;border:none;border-bottom:2px solid transparent;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all 0.2s}
+.games-hero{background:var(--ink);color:#fff;padding:4rem 2rem 3rem;text-align:center}
+.games-hero .eyebrow{font-size:0.7rem;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;color:var(--warm-light);margin-bottom:0.8rem}
+.games-hero h1{font-family:"Cormorant Garamond",serif;font-size:clamp(2.5rem,6vw,4rem);font-weight:300;line-height:1;margin-bottom:0.6rem}
+.games-hero p{color:rgba(255,255,255,0.55);font-size:0.95rem;max-width:44ch;margin:0 auto}
+.game-tabs{display:flex;justify-content:center;background:var(--stone);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-btn{padding:1rem 1.4rem;background:none;border:none;border-bottom:2px solid transparent;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all 0.2s}
 .tab-btn:hover{color:var(--ink)}
 .tab-btn.active{color:var(--sage);border-bottom-color:var(--sage)}
-.panel{display:none;padding:2rem 1.2rem;max-width:680px;margin:0 auto}
-.panel.active{display:block}
+.game-panel{display:none;padding:3rem 2rem;max-width:900px;margin:0 auto}
+.game-panel.active{display:block}
+.game-title{font-family:"Cormorant Garamond",serif;font-size:2rem;font-weight:400;margin-bottom:0.4rem}
+.game-desc{color:var(--ink-soft);font-size:0.92rem;margin-bottom:2rem}
+.btn{display:inline-block;padding:0.7rem 1.6rem;border-radius:1px;font-size:0.72rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;border:none;font-family:"Jost",sans-serif;transition:all 0.2s}
+.btn-sage{background:var(--sage);color:#fff}.btn-sage:hover{background:var(--sage-light)}
+.btn-outline{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}.btn-outline:hover{background:var(--ink);color:#fff}
+.btn-warm{background:var(--warm);color:#fff}.btn-warm:hover{background:#b8793a}
+.game-msg{padding:0.8rem 1.2rem;border-radius:2px;font-size:0.88rem;margin-top:1rem;display:none}
+.game-msg.show{display:block}
+.game-msg.success{background:var(--sage-pale);color:var(--sage);border:1px solid var(--sage-light)}
+.game-msg.error{background:#fdf0e8;color:#a85a20;border:1px solid #e8c49a}
+.game-msg.info{background:#EAF3F9;color:var(--sky);border:1px solid var(--sky-light)}
 
-/* ── POLLS ── */
-.poll-grid{display:flex;flex-direction:column;gap:1.2rem}
-.poll-card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:1.4rem;transition:box-shadow 0.2s}
-.poll-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.06)}
-.poll-pin{font-size:0.62rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--warm);margin-bottom:0.5rem}
-.poll-q{font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-weight:400;margin-bottom:0.9rem;line-height:1.3}
-.poll-opts{display:flex;flex-direction:column;gap:0.4rem}
-.poll-opt{position:relative;border:1.5px solid var(--line);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color 0.15s,transform 0.1s;background:#fff;-webkit-tap-highlight-color:transparent}
-.poll-opt:hover:not(.voted){border-color:var(--sage-light);transform:translateX(2px)}
-.poll-opt.voted{border-color:var(--sage);cursor:default}
-.poll-opt .bar{position:absolute;inset:0;background:var(--sage-pale);transition:width 0.5s cubic-bezier(.4,0,.2,1)}
-.poll-opt .label{position:relative;padding:0.55rem 0.85rem;font-size:0.86rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;z-index:1}
-.poll-opt .pct{font-weight:700;font-size:0.78rem;color:var(--sage);min-width:2.5rem;text-align:right}
-.poll-total{font-size:0.72rem;color:var(--ink-soft);margin-top:0.5rem}
-.voted-tick{color:var(--sage);font-weight:700;margin-left:0.3rem}
+/* WORDLE */
+#wordle-grid{display:flex;flex-direction:column;gap:6px;align-items:center;margin-bottom:1.5rem}
+.wordle-row{display:flex;gap:6px}
+.wordle-cell{width:56px;height:56px;border:2px solid var(--line);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;font-family:"Cormorant Garamond",serif;text-transform:uppercase;transition:background 0.3s,border-color 0.3s,color 0.3s;background:#fff;color:var(--ink)}
+.wordle-cell.filled{border-color:var(--ink-soft)}
+.wordle-cell.correct{background:var(--correct);border-color:var(--correct);color:#fff}
+.wordle-cell.present{background:var(--present);border-color:var(--present);color:#fff}
+.wordle-cell.absent{background:var(--absent);border-color:var(--absent);color:#fff}
+.wordle-keyboard{display:flex;flex-direction:column;gap:6px;align-items:center}
+.wordle-kb-row{display:flex;gap:5px}
+.wordle-key{height:44px;min-width:36px;padding:0 8px;border:none;border-radius:3px;background:var(--stone);color:var(--ink);font-family:"Jost",sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;justify-content:center}
+.wordle-key.correct{background:var(--correct);color:#fff}
+.wordle-key.present{background:var(--present);color:#fff}
+.wordle-key.absent{background:var(--absent);color:#fff}
+.wordle-key.wide{min-width:58px;font-size:0.68rem}
+.wordle-hint{font-size:0.78rem;color:var(--ink-soft);margin-bottom:1rem;font-style:italic;min-height:1.2em}
 
-/* ── MESSAGE BOARD ── */
-/* Compose box */
-.compose-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
-.compose-top{display:flex;gap:0.7rem;align-items:center;margin-bottom:0.8rem}
-.avatar-preview{width:40px;height:40px;border-radius:50%;background:var(--sage-pale);border:2px solid var(--sage-light);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;transition:all 0.2s}
-.name-input{flex:1;font-family:"Jost",sans-serif;font-size:0.9rem;border:1.5px solid var(--line);border-radius:4px;padding:0.55rem 0.75rem;background:#fff;color:var(--ink);transition:border-color 0.15s}
-.name-input:focus{outline:none;border-color:var(--sage-light)}
+/* CROSSWORD */
+.cw-wrap{display:grid;grid-template-columns:auto 1fr;gap:2.5rem;align-items:start}
+.cw-grid{display:inline-flex;flex-direction:column;gap:0;border:2px solid var(--ink)}
+.cw-row{display:flex}
+.cw-cell{width:36px;height:36px;border:1px solid rgba(44,44,42,0.3);position:relative;flex-shrink:0}
+.cw-cell.black{background:var(--ink)}
+.cw-cell input{position:absolute;inset:0;border:none;background:transparent;text-align:center;font-family:"Cormorant Garamond",serif;font-size:1.1rem;font-weight:500;text-transform:uppercase;color:var(--ink);outline:none;width:100%;height:100%;cursor:pointer}
+.cw-cell input.highlighted{background:rgba(74,127,168,0.15)}
+.cw-cell input.correct-cell{background:var(--sage-pale);color:var(--sage)}
+.cw-num{position:absolute;top:1px;left:2px;font-size:0.48rem;font-weight:700;color:var(--ink-soft);line-height:1;pointer-events:none;z-index:1}
+.cw-clues h4{font-family:"Cormorant Garamond",serif;font-size:1.1rem;font-weight:400;margin:1rem 0 0.5rem;color:var(--ink)}
+.cw-clue{font-size:0.82rem;color:var(--ink-soft);margin-bottom:0.35rem;cursor:pointer;padding:0.2rem 0.4rem;border-radius:2px}
+.cw-clue:hover{background:var(--stone)}
+.cw-clue.active{background:#EAF3F9;color:var(--sky)}
+.cw-clue strong{color:var(--warm);margin-right:0.3rem}
 
-/* Emoji toggle */
-.emoji-toggle{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.7rem}
-.emoji-toggle-btn{display:flex;align-items:center;gap:0.4rem;padding:0.4rem 0.8rem;border:1.5px solid var(--line);border-radius:20px;background:#fff;cursor:pointer;font-size:0.8rem;color:var(--ink-soft);transition:all 0.15s;font-family:"Jost",sans-serif}
-.emoji-toggle-btn:hover{border-color:var(--sage-light);background:var(--sage-pale)}
-.emoji-current{font-size:1.2rem;line-height:1}
-.emoji-drawer{display:none;flex-wrap:wrap;gap:0.3rem;padding:0.7rem;background:var(--stone);border-radius:8px;margin-bottom:0.7rem;animation:fadeUp 0.15s ease}
-.emoji-drawer.open{display:flex}
-.emoji-pill{width:38px;height:38px;border:1.5px solid transparent;border-radius:8px;background:#fff;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:all 0.12s;flex-shrink:0;-webkit-tap-highlight-color:transparent}
-.emoji-pill:hover{border-color:var(--sage-light);transform:scale(1.1)}
-.emoji-pill.sel{border-color:var(--sage);background:var(--sage-pale)}
+/* TRIVIA */
+.trivia-q{background:#fff;border:1px solid var(--line);border-radius:2px;padding:1.8rem;margin-bottom:1.2rem}
+.q-num{font-size:0.68rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--warm);margin-bottom:0.5rem}
+.q-text{font-family:"Cormorant Garamond",serif;font-size:1.25rem;font-weight:400;margin-bottom:1rem;line-height:1.3}
+.trivia-options{display:flex;flex-direction:column;gap:0.5rem}
+.trivia-opt{padding:0.7rem 1rem;background:var(--stone);border:1.5px solid transparent;border-radius:2px;cursor:pointer;font-size:0.88rem;transition:all 0.2s;text-align:left;font-family:"Jost",sans-serif;color:var(--ink)}
+.trivia-opt:hover:not(:disabled){background:var(--sage-pale);border-color:var(--sage-light)}
+.trivia-opt.correct{background:var(--sage-pale);border-color:var(--sage);color:var(--sage)}
+.trivia-opt.wrong{background:#fdf0e8;border-color:var(--warm);color:#a85a20}
+.trivia-opt:disabled{cursor:default}
+.trivia-score{font-family:"Cormorant Garamond",serif;font-size:2.5rem;font-weight:300;text-align:center;color:var(--sage);margin:1rem 0}
 
-/* Message textarea */
-.msg-area-wrap{position:relative}
-.msg-area{width:100%;font-family:"Jost",sans-serif;font-size:0.92rem;border:1.5px solid var(--line);border-radius:6px;padding:0.7rem 0.85rem;background:#fff;color:var(--ink);resize:none;transition:border-color 0.15s;line-height:1.5;min-height:72px}
-.msg-area:focus{outline:none;border-color:var(--sage-light)}
-.char-count{position:absolute;bottom:6px;right:8px;font-size:0.68rem;color:var(--ink-soft);opacity:0.6}
+/* SNAKE */
+.sn-wrap{display:flex;flex-direction:column;align-items:center;gap:1rem}
+.sn-header{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;justify-content:center}
+.sn-canvas{border-radius:6px;border:2px solid var(--stone);background:var(--ink);display:block;touch-action:none}
+.sn-dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px;margin-top:0.5rem}
+.sn-dpad button{width:52px;height:52px;border-radius:6px;border:none;background:var(--stone);color:var(--ink);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.1s;-webkit-tap-highlight-color:transparent}
+.sn-dpad button:active{background:var(--warm-light)}
+.sn-dpad .empty{background:transparent;pointer-events:none}
 
-.post-btn{width:100%;margin-top:0.7rem;padding:0.75rem;border-radius:4px;border:none;background:var(--sage);color:#fff;font-family:"Jost",sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem}
-.post-btn:hover{background:var(--sage-light)}
-.post-btn:disabled{background:var(--line);color:var(--ink-soft);cursor:default}
-.status-msg{padding:0.6rem 0.9rem;border-radius:4px;font-size:0.83rem;margin-top:0.6rem;display:none}
-.status-msg.show{display:block}
-.status-msg.ok{background:var(--sage-pale);color:var(--sage);border:1px solid var(--sage-light)}
-.status-msg.err{background:#fdf0e8;color:#a85a20;border:1px solid var(--warm-light)}
+/* MINESWEEPER */
+.ms-controls{display:flex;gap:0.8rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.ms-status{display:flex;gap:1.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
+.ms-counter{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;min-width:3ch;text-align:center;color:var(--ink)}
+.ms-counter span{font-size:0.65rem;display:block;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-soft);font-family:'Jost',sans-serif;font-weight:600}
+.ms-face{font-size:1.4rem;cursor:pointer;background:none;border:none;padding:0.2rem;border-radius:4px;transition:transform 0.1s}
+.ms-face:hover{transform:scale(1.1)}
+.ms-board{display:inline-grid;gap:2px;background:var(--stone);border:2px solid var(--stone);border-radius:6px;overflow:hidden;user-select:none;-webkit-user-select:none}
+.ms-cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:600;cursor:pointer;transition:background 0.08s;border-radius:2px;position:relative}
+.ms-cell.hidden{background:#fff;border:1px solid var(--line)}
+.ms-cell.hidden:hover{background:var(--sage-pale)}
+.ms-cell.flagged{background:#fff;border:1px solid var(--line)}
+.ms-cell.revealed{background:var(--stone);cursor:default;border:1px solid rgba(44,44,42,0.08)}
+.ms-cell.revealed.mine{background:#c0392b;color:#fff}
+.ms-cell.revealed.mine-trigger{background:#e74c3c}
+.ms-cell.n1{color:#4A7FA8}.ms-cell.n2{color:#5C7A5C}.ms-cell.n3{color:#b83232}
+.ms-cell.n4{color:#2C2C2A}.ms-cell.n5{color:#a85a20}.ms-cell.n6{color:#3a6f98}
+.ms-cell.n7{color:#333}.ms-cell.n8{color:#666}
+.ms-win-flash{animation:mswin 0.4s ease 0s 3}
+@keyframes mswin{0%{background:var(--sage-pale)}50%{background:var(--sage)}100%{background:var(--sage-pale)}}
+@media(max-width:420px){.ms-cell{width:28px;height:28px;font-size:0.95rem}}
+@media(max-width:340px){.ms-cell{width:24px;height:24px;font-size:0.85rem}}
 
-/* Posts feed */
-.feed-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
-.feed-header h3{font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-weight:400}
-.feed-count{font-size:0.72rem;color:var(--ink-soft);background:var(--stone);padding:0.2rem 0.6rem;border-radius:20px}
-.posts-list{display:flex;flex-direction:column;gap:0.8rem}
+/* 2048 */
+.t48-wrap{display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.t48-header{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;justify-content:center}
+.t48-score-box{background:var(--ink);color:#fff;border-radius:4px;padding:0.4rem 1rem;text-align:center;min-width:70px}
+.t48-score-label{font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;opacity:0.6}
+.t48-score-val{font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:300;line-height:1.1}
+.t48-board{background:#b5a89a;border-radius:8px;padding:8px;display:inline-grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}
+.t48-cell{width:90px;height:90px;border-radius:4px;background:rgba(238,228,218,0.35);display:flex;align-items:center;justify-content:center}
+.t48-tile{width:90px;height:90px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:"Cormorant Garamond",serif;font-weight:500;font-size:2rem;line-height:1;transition:transform 0.1s;position:absolute}
+.t48-tile.pop{animation:t48pop 0.15s ease}
+@keyframes t48pop{0%{transform:scale(0.8)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+.t48-over{position:absolute;inset:0;background:rgba(250,248,243,0.88);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.8rem}
+.t48-over h3{font-family:"Cormorant Garamond",serif;font-size:2rem;font-weight:300;color:var(--ink)}
+@media(max-width:420px){.t48-cell,.t48-tile{width:68px;height:68px}.t48-board{gap:6px;padding:6px}.t48-tile{font-size:1.5rem}}
+@media(max-width:340px){.t48-cell,.t48-tile{width:56px;height:56px}}
 
-/* Post card — chat bubble style */
-.post-card{display:flex;gap:0.75rem;align-items:flex-start;animation:fadeUp 0.3s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.post-avatar{width:42px;height:42px;border-radius:50%;background:var(--sage-pale);border:2px solid var(--sage-light);display:flex;align-items:center;justify-content:center;font-size:1.35rem;flex-shrink:0;cursor:default}
-.post-bubble{background:#fff;border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:0.8rem 1rem;flex:1;min-width:0;position:relative}
-.post-bubble::before{content:'';position:absolute;left:-8px;top:12px;width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-right:8px solid var(--line)}
-.post-bubble::after{content:'';position:absolute;left:-6px;top:13px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:7px solid #fff}
-.post-meta{display:flex;gap:0.5rem;align-items:baseline;margin-bottom:0.25rem;flex-wrap:wrap}
-.post-name{font-weight:600;font-size:0.84rem;color:var(--ink)}
-.post-time{font-size:0.7rem;color:var(--ink-soft)}
-.post-text{font-size:0.9rem;line-height:1.5;word-break:break-word;color:var(--ink)}
+/* SOLITAIRE */
+:root{--cw:72px}
+@media(max-width:500px){:root{--cw:44px}}
+.sol-top{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.sol-zone{display:flex;gap:0.5rem}
+.sol-foundations{display:flex;gap:0.5rem}
+.sol-tableau{display:flex;gap:4px;align-items:flex-start;min-height:340px;overflow-x:auto}
+.sol-pile{position:relative;width:var(--cw);flex-shrink:0;min-height:112px}
+.sol-card{width:var(--cw);aspect-ratio:5/7;border-radius:5px;border:1.5px solid rgba(44,44,42,0.18);background:#fff;position:absolute;cursor:pointer;user-select:none;box-shadow:0 1px 4px rgba(0,0,0,0.10);display:flex;flex-direction:column;padding:3px 4px;font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-weight:500;overflow:hidden;transition:box-shadow 0.1s}
+.sol-card:hover{box-shadow:0 3px 10px rgba(0,0,0,0.18)}
+.sol-card.face-down{background:repeating-linear-gradient(45deg,var(--sage) 0px,var(--sage) 5px,var(--sage-light) 5px,var(--sage-light) 10px);border-color:var(--sage);cursor:default}
+.sol-card.face-down::after{content:'B\26S';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:0.8rem;font-style:italic;color:rgba(255,255,255,0.75);letter-spacing:0.05em}
+.sol-card.red{color:#b83232}
+.sol-card.black{color:var(--ink)}
+.sol-card .cr{font-size:0.65rem;line-height:1;font-weight:700}
+.sol-card .cs{font-size:1rem;line-height:1;margin-top:1px}
+.sol-card .cb{position:absolute;bottom:3px;right:4px;transform:rotate(180deg);font-size:0.65rem;line-height:1}
+.sol-card .cbs{position:absolute;bottom:4px;right:4px;transform:rotate(180deg);font-size:1rem;line-height:1}
+.sol-card.sel{box-shadow:0 0 0 2.5px var(--sky),0 4px 14px rgba(74,127,168,0.35);z-index:100}
+.sol-card.sel-group{box-shadow:0 0 0 2px var(--sky-light);z-index:99}
+.sol-empty{width:var(--cw);aspect-ratio:5/7;border-radius:5px;border:1.5px dashed rgba(44,44,42,0.2);background:rgba(44,44,42,0.03)}
+.sol-stock{width:var(--cw);aspect-ratio:5/7;border-radius:5px;border:1.5px solid rgba(44,44,42,0.2);background:var(--stone);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:1.4rem;color:var(--ink-soft);transition:background 0.15s}
+.sol-stock:hover{background:var(--warm-light)}
+.sol-stock.empty{background:rgba(44,44,42,0.04);border-style:dashed;font-size:1.1rem;color:rgba(44,44,42,0.25)}
+.sol-waste{width:var(--cw);flex-shrink:0;position:relative;aspect-ratio:5/7}
+.sol-waste .sol-card{position:relative}
+.sol-foundation-slot{width:var(--cw);aspect-ratio:5/7;border-radius:5px;border:1.5px dashed rgba(44,44,42,0.2);background:rgba(44,44,42,0.03);display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:rgba(44,44,42,0.2);flex-shrink:0;position:relative}
+.sol-score-row{display:grid;grid-template-columns:1.5rem 1fr auto auto;gap:0.5rem 1rem;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--line);font-size:0.85rem}
+.sol-score-row:first-child{border-top:1px solid var(--line)}
+.sol-score-rank{font-weight:700;color:var(--warm);font-family:'Cormorant Garamond',serif;font-size:1rem}
+.sol-win-banner{background:var(--sage);color:#fff;border-radius:4px;padding:1.2rem 1.5rem;text-align:center;margin-top:1rem}
+.sol-win-banner h3{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:300;margin-bottom:0.3rem}
+.sudoku-grid{display:inline-grid;grid-template-columns:repeat(9,1fr);gap:0;border:2px solid var(--ink);margin-bottom:1.2rem}
+.sudoku-cell{width:44px;height:44px;border:1px solid rgba(44,44,42,0.2);display:flex;align-items:center;justify-content:center;background:#fff;position:relative}
+.sudoku-cell:nth-child(3n){border-right:2px solid var(--ink)}
+.sudoku-cell:nth-child(9n){border-right:none}
+.sudoku-cell:nth-child(n+19):nth-child(-n+27),.sudoku-cell:nth-child(n+46):nth-child(-n+54){border-bottom:2px solid var(--ink)}
+.sudoku-cell input{width:100%;height:100%;border:none;background:transparent;text-align:center;font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:var(--sky);outline:none}
+.sudoku-cell input:focus{background:var(--sage-pale)}
+.sudoku-cell.given{background:var(--stone)}
+.sudoku-cell.given input{color:var(--ink);font-weight:700;cursor:default}
+.sudoku-cell.error input{color:#c0392b}
+.sudoku-cell.ok input{color:var(--sage)}
+.sudoku-controls{display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem}
 
-/* Reaction buttons */
-.reactions{display:flex;gap:0.4rem;margin-top:0.6rem;flex-wrap:wrap}
-.react-btn{border:1px solid var(--line);border-radius:20px;padding:0.2rem 0.55rem;font-size:0.82rem;cursor:pointer;background:#fff;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;gap:0.2rem;-webkit-tap-highlight-color:transparent}
-.react-btn:hover{border-color:var(--warm-light);background:var(--stone);transform:scale(1.05)}
-.react-btn.reacted{background:var(--warm-light);border-color:var(--warm);font-weight:600}
-.react-count{font-size:0.75rem;font-weight:600}
-
-.loading{text-align:center;padding:2.5rem;color:var(--ink-soft);font-size:0.88rem;font-style:italic}
-.empty{text-align:center;padding:3rem 1rem;color:var(--ink-soft)}
-.empty .empty-icon{font-size:2.5rem;margin-bottom:0.5rem}
-.empty p{font-size:0.9rem}
-
-/* ── FOOTER ── */
-footer{text-align:center;padding:2rem 1rem;font-size:0.78rem;color:var(--ink-soft);border-top:1px solid var(--line);margin-top:2rem}
-.fn{font-family:"Cormorant Garamond",serif;font-size:0.95rem;color:var(--ink);margin-bottom:0.2rem}
-@media(max-width:480px){
-  .panel{padding:1.2rem 0.8rem}
-  .post-bubble{border-radius:0 8px 8px 8px}
+footer{background:var(--ink);color:rgba(255,255,255,0.35);text-align:center;padding:2rem;font-size:0.76rem;margin-top:4rem}
+footer .fn{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:rgba(255,255,255,0.7);margin-bottom:0.3rem}
+@media(max-width:700px){
+  .cw-wrap{grid-template-columns:1fr}
+  .wordle-cell{width:46px;height:46px;font-size:1.2rem}
+  .game-panel{padding:2rem 1rem}
+  .sudoku-cell{width:36px;height:36px}
+  .cw-cell{width:30px;height:30px}
+  .cw-cell input{font-size:0.9rem}
 }
 </style>
 </head>
 <body>
-
-<div class="hero">
-  <p class="eyebrow">Bruno &amp; Sally · 20 September 2027</p>
-  <h1>The Board 💬</h1>
-  <p>Cast your predictions. Leave a message. Join the chaos.</p>
+<script>
+(function(){
+  if(window.self === window.top){
+    // Loaded directly, not in shell iframe — redirect to shell
+    var page = window.location.pathname.replace(/^\//, '').split('/')[0];
+    window.location.replace('/' + (page ? '#' + page : ''));
+  }
+})();
+</script>
+<div class="games-hero">
+  <p class="eyebrow" id="countdown-text">Loading...</p>
+  <h1>The Pre-Wedding<br/>Games Room</h1>
+  <p>Keep yourself entertained until September 2027. All themed around Bruno &amp; Sally — how well do you know the couple?</p>
 </div>
 
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('predictions',this)">🔮 Predictions</button>
-  <button class="tab-btn" onclick="switchTab('messages',this)">💌 Messages</button>
+<div class="game-tabs" id="tabs">
+  <button class="tab-btn active" onclick="switchTab('wordle',this)">Weddle</button>
+  <button class="tab-btn" onclick="switchTab('trivia',this)">Trivia</button>
+  <button class="tab-btn" onclick="switchTab('crossword',this)">Crossword</button>
+  <button class="tab-btn" onclick="switchTab('sudoku',this)">Sudoku</button>
+  <button class="tab-btn" onclick="switchTab('solitaire',this)">Solitaire</button>
+  <button class="tab-btn" onclick="switchTab('twentyfourtyeight',this)">2048</button>
+  <button class="tab-btn" onclick="switchTab('minesweeper',this)">Minesweeper</button>
+  <button class="tab-btn" onclick="switchTab('snake',this)">Snake</button>
 </div>
 
-<!-- ══ PREDICTIONS ══ -->
-<div class="panel active" id="panel-predictions">
-  <p style="color:var(--ink-soft);font-size:0.85rem;margin-bottom:1.2rem">Tap to vote. Results update live.</p>
-  <div class="poll-grid" id="poll-grid">
-    <div class="loading">Loading predictions…</div>
+<!-- ══ WEDDLE ══ -->
+<div class="game-panel active" id="panel-wordle">
+  <h2 class="game-title">Weddle</h2>
+  <p class="game-desc">Guess the 6-letter word in 6 tries. All words relate to Bruno &amp; Sally's story. 🟩 right place &nbsp;🟨 wrong place &nbsp;⬜ not in word</p>
+  <p class="wordle-hint" id="wordle-hint"></p>
+  <div id="wordle-grid"></div>
+  <div id="wordle-keyboard" class="wordle-keyboard"></div>
+  <div class="game-msg" id="wordle-msg"></div>
+  <div style="margin-top:1.2rem;display:flex;gap:0.8rem;flex-wrap:wrap">
+    <button class="btn btn-sage" onclick="newWordleGame()">New word</button>
+    <button class="btn btn-outline" onclick="revealWordle()">Give up</button>
   </div>
 </div>
 
-<!-- ══ MESSAGES ══ -->
-<div class="panel" id="panel-messages">
-
-  <div class="compose-card">
-    <div class="compose-top">
-      <div class="avatar-preview" id="avatar-preview">😊</div>
-      <input type="text" class="name-input" id="msg-name" placeholder="Your name" maxlength="40" oninput="updateAvatar()"/>
-    </div>
-
-    <!-- Collapsed emoji picker -->
-    <div class="emoji-toggle">
-      <button class="emoji-toggle-btn" onclick="toggleEmojiDrawer()" id="emoji-toggle-btn">
-        <span class="emoji-current" id="emoji-current">😊</span>
-        <span>Avatar</span>
-        <span id="emoji-chevron">▾</span>
-      </button>
-    </div>
-    <div class="emoji-drawer" id="emoji-drawer"></div>
-
-    <div class="msg-area-wrap">
-      <textarea class="msg-area" id="msg-text" placeholder="Say something lovely (or funny)…" maxlength="300" oninput="updateCharCount()"></textarea>
-      <span class="char-count" id="char-count">300</span>
-    </div>
-
-    <button class="post-btn" id="post-btn" onclick="submitPost()">
-      <span>Send message</span><span id="post-emoji">😊</span>
-    </button>
-    <div class="status-msg" id="msg-status"></div>
+<!-- ══ TRIVIA ══ -->
+<div class="game-panel" id="panel-trivia">
+  <h2 class="game-title">Bruno &amp; Sally Trivia</h2>
+  <p class="game-desc">How well do you know the happy couple? 20 questions — no Googling.</p>
+  <div id="trivia-container"></div>
+  <div id="trivia-result" style="display:none;text-align:center;padding:2rem 0">
+    <p style="font-size:0.8rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:0.5rem">Your score</p>
+    <div class="trivia-score" id="trivia-score"></div>
+    <p id="trivia-msg" style="color:var(--ink-soft);font-size:0.95rem;margin-bottom:1.5rem"></p>
+    <button class="btn btn-sage" onclick="startTrivia()">Play again</button>
   </div>
-
-  <div class="feed-header">
-    <h3>Messages</h3>
-    <span class="feed-count" id="feed-count">loading…</span>
+  <div id="trivia-nav" style="display:flex;gap:0.8rem;margin-top:1.5rem;align-items:center">
+    <button class="btn btn-outline" onclick="triviaNav(-1)" id="tprev">Previous</button>
+    <span id="tcounter" style="font-size:0.82rem;color:var(--ink-soft);flex:1;text-align:center"></span>
+    <button class="btn btn-sage" onclick="triviaNav(1)" id="tnext">Next</button>
   </div>
-  <div class="posts-list" id="posts-list">
-    <div class="loading">Loading messages…</div>
+</div>
+
+<!-- ══ CROSSWORD ══ -->
+<div class="game-panel" id="panel-crossword">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:0.4rem">
+    <h2 class="game-title" style="margin:0">The Bruno &amp; Sally Crossword</h2>
+    <div style="display:flex;gap:0.6rem;align-items:center">
+      <span id="cw-puzzle-label" style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-soft)"></span>
+      <button class="btn btn-outline" onclick="nextCWPuzzle()">Next puzzle</button>
+    </div>
+  </div>
+  <p class="game-desc">Click a clue or a cell to start typing. All answers relate to Bruno &amp; Sally's story.</p>
+  <div class="cw-wrap">
+    <div>
+      <div id="cw-grid"></div>
+      <div style="margin-top:1rem;display:flex;gap:0.8rem;flex-wrap:wrap">
+        <button class="btn btn-sage" onclick="checkCW()">Check</button>
+        <button class="btn btn-outline" onclick="revealCW()">Reveal</button>
+        <button class="btn btn-warm" onclick="resetCW()">Reset</button>
+      </div>
+      <div class="game-msg" id="cw-msg"></div>
+    </div>
+    <div id="cw-clues"></div>
+  </div>
+</div>
+
+<!-- ══ SUDOKU ══ -->
+<div class="game-panel" id="panel-sudoku">
+  <h2 class="game-title">Wedding Sudoku</h2>
+  <p class="game-desc">Fill every row, column and 3×3 box with digits 1–9.</p>
+  <div class="sudoku-controls">
+    <button class="btn btn-sage" onclick="newSudoku('easy')">Easy</button>
+    <button class="btn btn-outline" onclick="newSudoku('medium')">Medium</button>
+    <button class="btn btn-warm" onclick="newSudoku('hard')">Hard</button>
+    <button class="btn btn-outline" onclick="checkSudoku()">Check</button>
+    <button class="btn btn-outline" onclick="solveSudoku()">Solve</button>
+  </div>
+  <div id="sudoku-grid" class="sudoku-grid"></div>
+  <div class="game-msg" id="sudoku-msg"></div>
+</div>
+
+<!-- ══ SOLITAIRE ══ -->
+<div class="game-panel" id="panel-solitaire">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:0.4rem">
+    <h2 class="game-title" style="margin:0">Solitaire</h2>
+    <div style="display:flex;gap:1rem;align-items:center">
+      <span id="sol-timer" style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--ink-soft)">0:00</span>
+      <span id="sol-moves" style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-soft)">0 moves</span>
+    </div>
+  </div>
+  <p class="game-desc">Klondike solitaire. Build four suit piles from Ace to King. Draw 1 card at a time.</p>
+  <div id="sol-top" class="sol-top">
+    <div class="sol-zone">
+      <div class="sol-stock" id="sol-stock" onclick="solDraw()"></div>
+      <div class="sol-waste" id="sol-waste"></div>
+    </div>
+    <div class="sol-foundations" id="sol-foundations"></div>
+  </div>
+  <div id="sol-tableau" class="sol-tableau"></div>
+  <div style="margin-top:1.2rem;display:flex;gap:0.8rem;flex-wrap:wrap;align-items:center">
+    <button class="btn btn-sage" onclick="solNew()">New game</button>
+    <button class="btn btn-outline" onclick="solUndo()">Undo</button>
+    <button class="btn btn-warm" id="sol-submit-btn" style="display:none" onclick="solSubmitScore()">Submit score</button>
+  </div>
+  <div class="game-msg" id="sol-msg"></div>
+  <!-- Leaderboard -->
+  <div id="sol-leaderboard" style="margin-top:2.5rem">
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
+    <div id="sol-scores-list"></div>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
+  </div>
+</div>
+
+<!-- ══ 2048 ══ -->
+<div class="game-panel" id="panel-twentyfourtyeight">
+  <h2 class="game-title">2048</h2>
+  <p class="game-desc">Slide tiles to merge them. Reach 2048 to win. Use arrow keys or swipe.</p>
+  <div class="t48-wrap">
+    <div class="t48-header">
+      <div class="t48-score-box">
+        <div class="t48-score-label">Score</div>
+        <div class="t48-score-val" id="t48-score">0</div>
+      </div>
+      <div class="t48-score-box">
+        <div class="t48-score-label">Best</div>
+        <div class="t48-score-val" id="t48-best">0</div>
+      </div>
+      <button class="btn btn-outline" onclick="t48New()">New game</button>
+    </div>
+    <div class="t48-board" id="t48-board">
+      <div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div>
+      <div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div>
+      <div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div>
+      <div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div><div class="t48-cell"></div>
+    </div>
+    <div class="game-msg" id="t48-msg"></div>
+  </div>
+  <!-- Leaderboard -->
+  <div style="margin-top:2.5rem;max-width:500px">
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
+    <div id="t48-scores-list"></div>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
+  </div>
+</div>
+
+<!-- ══ MINESWEEPER ══ -->
+<div class="game-panel" id="panel-minesweeper">
+  <h2 class="game-title">Minesweeper</h2>
+  <p class="game-desc">Clear the board without hitting a mine. Right-click (or long-press) to flag.</p>
+  <div class="ms-controls">
+    <button class="btn btn-sage" onclick="msNew('easy')">Easy</button>
+    <button class="btn btn-outline" onclick="msNew('medium')">Medium</button>
+    <button class="btn btn-warm" onclick="msNew('hard')">Hard</button>
+  </div>
+  <div class="ms-status">
+    <div class="ms-counter"><span>Mines</span><span id="ms-mines">10</span></div>
+    <button class="ms-face" id="ms-face" onclick="msNew()">🙂</button>
+    <div class="ms-counter"><span>Time</span><span id="ms-timer">0</span></div>
+  </div>
+  <div id="ms-board" class="ms-board"></div>
+  <div class="game-msg" id="ms-msg"></div>
+  <!-- Leaderboard -->
+  <div style="margin-top:2.5rem;max-width:500px">
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
+    <div id="ms-scores-list"></div>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
+  </div>
+</div>
+
+<!-- ══ SNAKE ══ -->
+<div class="game-panel" id="panel-snake">
+  <h2 class="game-title">Snake</h2>
+  <p class="game-desc">Eat the Aperol Spritz. Don't hit the walls or yourself. Arrow keys or d-pad.</p>
+  <div class="sn-wrap">
+    <div class="sn-header">
+      <div class="ms-counter"><span>Score</span><span id="sn-score">0</span></div>
+      <div class="ms-counter"><span>Best</span><span id="sn-best">0</span></div>
+      <div class="ms-counter"><span>Speed</span><span id="sn-level">1</span></div>
+    </div>
+    <canvas id="sn-canvas" class="sn-canvas" width="360" height="360"></canvas>
+    <!-- D-pad for mobile -->
+    <div class="sn-dpad" id="sn-dpad">
+      <div class="empty"></div>
+      <button onpointerdown="snDir(0,-1)">▲</button>
+      <div class="empty"></div>
+      <button onpointerdown="snDir(-1,0)">◀</button>
+      <button onpointerdown="snPause()">⏸</button>
+      <button onpointerdown="snDir(1,0)">▶</button>
+      <div class="empty"></div>
+      <button onpointerdown="snDown()">▼</button>
+      <div class="empty"></div>
+    </div>
+    <div class="game-msg" id="sn-msg"></div>
+  </div>
+  <div style="margin-top:2.5rem;max-width:500px">
+    <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
+    <div id="sn-scores-list"></div>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
   </div>
 </div>
 
 <footer>
-  <p class="fn">Bruno &amp; Sally</p>
-  <p>20 September 2027 · Holy Cross Church, Newton Ferrers</p>
+  <p class="fn">Bruno &amp; Sally · 20 Sept 2027</p>
+  <p>Made with love, Aperol Spritz, and a lot of games &#x1F9E9;</p>
 </footer>
 
 <script>
-var SUPA_URL = 'https://zjynlhguilaoxrioysxn.supabase.co';
-var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqeW5saGd1aWxhb3hyaW95c3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTMxMTksImV4cCI6MjA5NzcyOTExOX0.jwjX0wyaGnsns8Gy8q1XF-B7QIIAVKFtrMfl4SAZ1L0';
-var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-var VOTER_ID = localStorage.getItem('voter_id') || (function(){
-  var id = Math.random().toString(36).slice(2)+Date.now().toString(36);
-  localStorage.setItem('voter_id', id); return id;
-})();
-
 // ── TAB SWITCHING ─────────────────────────────────────────
 function switchTab(id, btn) {
-  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
+  if(id==='solitaire'&&!solInitted){solInitted=true;solNew();}
+  if(id==='twentyfourtyeight'&&!T48.initted){t48New();t48RenderLeaderboard();}
+  if(id==='minesweeper'&&!MS.initted){msNew('easy');msRenderLeaderboard();}
+  if(id==='snake'&&!SN.initted){snInit();snRenderLeaderboard();}
+}
+function showMsg(id, text, type) {
+  var el = document.getElementById(id);
+  el.textContent = text; el.className = 'game-msg show '+type;
 }
 
-// ── EMOJI SETUP ───────────────────────────────────────────
-var EMOJIS = ['😊','😂','🥂','💒','💐','🌊','🎉','❤️','🦞','🥳','😭','🕺','🎊','🌸','🍊','👏','🤩','😎'];
-var selectedEmoji = '😊';
-
-(function(){
-  var drawer = document.getElementById('emoji-drawer');
-  EMOJIS.forEach(function(e){
-    var btn = document.createElement('button');
-    btn.className = 'emoji-pill' + (e===selectedEmoji?' sel':'');
-    btn.textContent = e;
-    btn.onclick = function(){
-      selectedEmoji = e;
-      drawer.querySelectorAll('.emoji-pill').forEach(function(b){ b.classList.remove('sel'); });
-      btn.classList.add('sel');
-      document.getElementById('avatar-preview').textContent = e;
-      document.getElementById('post-emoji').textContent = e;
-      document.getElementById('emoji-current').textContent = e;
-      toggleEmojiDrawer(false); // close after picking
-    };
-    drawer.appendChild(btn);
-  });
-})();
-
-function toggleEmojiDrawer(forceClose){
-  var drawer = document.getElementById('emoji-drawer');
-  var chevron = document.getElementById('emoji-chevron');
-  var open = drawer.classList.contains('open');
-  if(forceClose === false || open){
-    drawer.classList.remove('open');
-    chevron.textContent = '▾';
-  } else {
-    drawer.classList.add('open');
-    chevron.textContent = '▴';
+// ── WEDDLE ────────────────────────────────────────────────
+var WORDS = [
+  {w:'APEROL',h:'The drink that runs through their whole story'},
+  {w:'TINKER',h:"Sally's parents' boat in Devon"},
+  {w:'SAILOR',h:'What you become the moment you step on Tinker'},
+  {w:'CLIFFS',h:'You\'ll find these all along the Devon coastline'},
+  {w:'BRONZE',h:"Bruno's approximate skin tone after Australia"},
+  {w:'CORNET',h:'Ideal vessel for Devon ice cream'},
+  {w:'OYSTER',h:'Devon seafood classic'},
+  {w:'CASTLE',h:"Castel Sant'Angelo — Rome trip landmark"},
+  {w:'SPRINT',h:'What Sally eventually convinced Bruno to do'},
+  {w:'GROOMS',h:'There\'s one of these at the wedding'},
+  {w:'BRIDAL',h:'The party, the shower, all of it'},
+  {w:'CHAPEL',h:'Where it all begins on the 18th'},
+  {w:'STARRY',h:'The Devon night sky, miles from any city'},
+  {w:'VENICE',h:'They managed about forty minutes here'},
+  {w:'QUOKKA',h:'The friendliest animal in Australia'},
+  {w:'FORMAL',h:'The dress code is summer ______'},
+  {w:'BALLAD',h:'Every great love story needs one'},
+  {w:'SALMON',h:'Could this have been the mystery Tenerife fish?'},
+];
+var wState={};
+function pickWord(){return WORDS[Math.floor(Math.random()*WORDS.length)];}
+function buildWordleGrid(){
+  var g=document.getElementById('wordle-grid'); g.innerHTML='';
+  for(var r=0;r<6;r++){
+    var row=document.createElement('div'); row.className='wordle-row'; row.id='wrow-'+r;
+    for(var c=0;c<6;c++){var cell=document.createElement('div');cell.className='wordle-cell';cell.id='wc-'+r+'-'+c;row.appendChild(cell);}
+    g.appendChild(row);
   }
 }
-
-function updateCharCount(){
-  var v = document.getElementById('msg-text').value;
-  var rem = 300 - v.length;
-  var el = document.getElementById('char-count');
-  el.textContent = rem;
-  el.style.color = rem < 30 ? '#b83232' : '';
-}
-
-// ── POSTS ─────────────────────────────────────────────────
-var postsCache = [];
-
-function timeAgo(iso){
-  var diff = (Date.now() - new Date(iso)) / 1000;
-  if(diff < 60) return 'just now';
-  if(diff < 3600) return Math.floor(diff/60)+'m ago';
-  if(diff < 86400) return Math.floor(diff/3600)+'h ago';
-  return Math.floor(diff/86400)+'d ago';
-}
-
-async function loadPosts(){
-  try {
-    var {data, error} = await supa.from('posts')
-      .select('*').order('created_at',{ascending:false}).limit(100);
-    if(error) throw error;
-    postsCache = data || [];
-    renderPosts();
-  } catch(e){
-    var msg = (e && e.message && e.message.includes('relation')) 
-      ? 'Tables not set up yet — run the SQL in Supabase first.'
-      : 'Could not load messages.';
-    document.getElementById('posts-list').innerHTML =
-      '<div class="empty"><div class="empty-icon">😬</div><p>'+msg+'</p></div>';
-  }
-}
-
-function renderPosts(){
-  var list = document.getElementById('posts-list');
-  var count = document.getElementById('feed-count');
-  if(count) count.textContent = postsCache.length + (postsCache.length===1?' message':' messages');
-  if(!postsCache.length){
-    list.innerHTML = '<div class="empty"><div class="empty-icon">💌</div><p>No messages yet — be the first!</p></div>';
-    return;
-  }
-  list.innerHTML = postsCache.map(function(p){
-    var reactions = p.reactions || {};
-    var reacted = JSON.parse(localStorage.getItem('reacted_'+p.id)||'{}');
-    var reactionEmojis = ['❤️','😂','🥂','👏'];
-    var reactionHtml = reactionEmojis.map(function(r){
-      var cnt = reactions[r] || 0;
-      var cls = reacted[r] ? ' reacted' : '';
-      return '<button class="react-btn'+cls+'" onclick="reactPost(\''+p.id+'\',\''+r+'\')">'+
-        r+(cnt>0?'<span class="react-count">'+cnt+'</span>':'')+
-        '</button>';
-    }).join('');
-    return '<div class="post-card" id="post-'+p.id+'">'+
-      '<div class="post-avatar">'+escHtml(p.emoji||'😊')+'</div>'+
-      '<div class="post-bubble">'+
-        '<div class="post-meta">'+
-          '<span class="post-name">'+escHtml(p.name)+'</span>'+
-          '<span class="post-time">'+timeAgo(p.created_at)+'</span>'+
-        '</div>'+
-        '<div class="post-text">'+escHtml(p.message)+'</div>'+
-        '<div class="reactions">'+reactionHtml+'</div>'+
-      '</div></div>';
-  }).join('');
-}
-
-async function submitPost(){
-  var name = document.getElementById('msg-name').value.trim();
-  var message = document.getElementById('msg-text').value.trim();
-  var status = document.getElementById('msg-status');
-  var btn = document.getElementById('post-btn');
-  if(!name){ showStatus(status,'Enter your name first 👆','err'); return; }
-  if(!message){ showStatus(status,'Write something first!','err'); return; }
-  btn.disabled = true; btn.querySelector('span').textContent = 'Sending…';
-  try {
-    var {error} = await supa.from('posts').insert({
-      name: name, message: message, emoji: selectedEmoji, reactions: {}
+function buildWordleKb(){
+  var kb=document.getElementById('wordle-keyboard'); kb.innerHTML='';
+  [['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']].forEach(function(row){
+    var div=document.createElement('div'); div.className='wordle-kb-row';
+    row.forEach(function(k){
+      var btn=document.createElement('button'); btn.className='wordle-key'+(k.length>1?' wide':'');
+      btn.textContent=k; btn.id='wk-'+k; btn.onclick=function(){handleKey(k)};
+      div.appendChild(btn);
     });
-    if(error) throw error;
-    document.getElementById('msg-text').value = '';
-    document.getElementById('char-count').textContent = '300';
-    showStatus(status,'Posted! 🎉','ok');
-    loadPosts();
-  } catch(e){
-    var detail = (e && e.message) ? e.message : 'unknown error';
-    showStatus(status,'Could not post — '+detail,'err');
-    console.error('Post error:', e);
-  } finally {
-    btn.disabled = false; btn.querySelector('span').textContent = 'Send message';
+    kb.appendChild(div);
+  });
+}
+function newWordleGame(){
+  wState={word:pickWord(),row:0,col:0,over:false,letters:{}};
+  buildWordleGrid(); buildWordleKb();
+  document.getElementById('wordle-hint').textContent='💡 '+wState.word.h;
+  document.getElementById('wordle-msg').className='game-msg';
+}
+function handleKey(k){
+  if(wState.over) return;
+  if(k==='⌫'||k==='BACKSPACE'){
+    if(wState.col>0){wState.col--;document.getElementById('wc-'+wState.row+'-'+wState.col).textContent='';}
+  } else if(k==='ENTER'){submitWordle();}
+  else if(/^[A-Z]$/.test(k)&&wState.col<6){
+    document.getElementById('wc-'+wState.row+'-'+wState.col).textContent=k;
+    wState.col++;
   }
 }
+function submitWordle(){
+  if(wState.col<6){showMsg('wordle-msg','Not enough letters','error');return;}
+  var guess='',target=wState.word.w;
+  for(var c=0;c<6;c++) guess+=document.getElementById('wc-'+wState.row+'-'+c).textContent;
+  var res=Array(6).fill('absent'),tLeft=target.split(''),gArr=guess.split('');
+  for(var i=0;i<6;i++){if(gArr[i]===tLeft[i]){res[i]='correct';tLeft[i]=null;gArr[i]=null;}}
+  for(var i=0;i<6;i++){if(!gArr[i]) continue;var idx=tLeft.indexOf(gArr[i]);if(idx>=0){res[i]='present';tLeft[idx]=null;}}
+  var r=wState.row;
+  res.forEach(function(state,i){
+    setTimeout(function(){
+      var cell=document.getElementById('wc-'+r+'-'+i); cell.classList.add(state);
+      var letter=guess[i],cur=wState.letters[letter]||'';
+      var kEl=document.getElementById('wk-'+letter);
+      if(state==='correct'||(state==='present'&&cur!=='correct')||(state==='absent'&&!cur)){
+        wState.letters[letter]=state;
+        if(kEl) kEl.className='wordle-key'+(letter.length>1?' wide':'')+' '+state;
+      }
+    },i*80);
+  });
+  wState.row++; wState.col=0;
+  var won=res.every(function(r){return r==='correct';});
+  setTimeout(function(){
+    if(won){showMsg('wordle-msg','🎉 Brilliant! The word was '+target,'success');wState.over=true;}
+    else if(wState.row>=6){showMsg('wordle-msg','The word was '+target+'. Better luck next time!','info');wState.over=true;}
+    else document.getElementById('wordle-msg').className='game-msg';
+  },520);
+}
+function revealWordle(){if(wState.word) showMsg('wordle-msg','The word was: '+wState.word.w,'info');wState.over=true;}
+document.addEventListener('keydown',function(e){
+  // Only fire wordle keys when the wordle panel is visible/active
+  if(!document.getElementById('panel-wordle').classList.contains('active')) return;
+  // Don't hijack input from other focused elements
+  var tag = e.target.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA') return;
+  var k=e.key.toUpperCase();
+  if(k==='ENTER') handleKey('ENTER');
+  else if(k==='BACKSPACE') handleKey('⌫');
+  else if(/^[A-Z]$/.test(k)) handleKey(k);
+});
 
-async function reactPost(postId, reaction){
-  var reacted = JSON.parse(localStorage.getItem('reacted_'+postId)||'{}');
-  if(reacted[reaction]) return;
-  try {
-    var {data} = await supa.from('posts').select('reactions').eq('id',postId).single();
-    var reactions = (data && data.reactions) || {};
-    reactions[reaction] = (reactions[reaction]||0) + 1;
-    var {error} = await supa.from('posts').update({reactions}).eq('id',postId);
-    if(error) throw error;
-    reacted[reaction] = true;
-    localStorage.setItem('reacted_'+postId, JSON.stringify(reacted));
-    loadPosts();
-  } catch(e){}
+// ── TRIVIA ────────────────────────────────────────────────
+var TQ = [
+  // Personal facts
+  {q:"Where did Bruno and Sally first match on Hinge?",opts:["Victoria Park","BrewDog Shoreditch","Three Colts Tavern","The Culpeper"],a:1},
+  {q:"What is the name of Sally's parents' boat?",opts:["Skipper","Tinker","Dinghy","Sailor"],a:1},
+  {q:"What city did Bruno propose to Sally in?",opts:["Rome","Florence","Venice","Bologna"],a:3},
+  {q:"What drink appears most in Bruno and Sally's story?",opts:["Prosecco","Margarita","Aperol Spritz","Old Fashioned"],a:2},
+  {q:"What race did Sally get Bruno to run?",opts:["London Marathon","Big Half","Couch to 5K","Parkrun"],a:1},
+  {q:"What game were they playing when they got the noise complaint?",opts:["Cards Against Humanity","Jenga","Throw Throw Burrito","Exploding Kittens"],a:2},
+  {q:"Which country did Bruno get extremely sunburnt in on day one?",opts:["Tenerife","Corfu","Greece","Australia"],a:3},
+  {q:"Where did Bruno and Sally move in together?",opts:["Bethnal Green","Hackney","Rotherhithe","Stratford"],a:2},
+  {q:"Who is Max?",opts:["Bruno's brother","Sally's brother","Jamie's brother","A friend from uni"],a:1},
+  {q:"What competition did they stumble upon in Treviso?",opts:["Pasta World Cup","Tiramisu World Cup","Aperol Spritz festival","Gelato Championship"],a:1},
+  // Geography & local knowledge
+  {q:"Rotherhithe is in which London borough?",opts:["Tower Hamlets","Lambeth","Southwark","Greenwich"],a:2},
+  {q:"What famous tunnel runs under the Thames near Rotherhithe?",opts:["Thames Tunnel (Brunel)","Blackwall Tunnel","Dartford Crossing","Woolwich Tunnel"],a:0},
+  {q:"Which Victorian engineer built the world's first underwater tunnel at Rotherhithe?",opts:["Isambard Kingdom Brunel","George Stephenson","Thomas Telford","Marc Isambard Brunel"],a:3},
+  {q:"Newton Ferrers sits on which Devon estuary?",opts:["Dart Estuary","Yealm Estuary","Tamar Estuary","Plym Estuary"],a:1},
+  {q:"Plymouth is home to which famous naval base?",opts:["HMNB Devonport","HMNB Portsmouth","HMNB Clyde","RAF Plymouth"],a:0},
+  {q:"The Mayflower departed from which English port in 1620?",opts:["Dartmouth","Bristol","Plymouth","Southampton"],a:2},
+  {q:"Cookham is a village on which river?",opts:["Avon","Wye","Thames","Severn"],a:2},
+  {q:"Which famous artist was strongly associated with Cookham?",opts:["L.S. Lowry","Stanley Spencer","John Constable","J.M.W. Turner"],a:1},
+  {q:"What is the what3words address for the reception venue Carswell?",opts:["sunny.fields.devon","awestruck.bloomers.ideal","coastal.views.perfect","wedding.vibes.only"],a:1},
+  {q:"Holy Cross Church is in Newton Ferrers — which county?",opts:["Cornwall","Somerset","Dorset","Devon"],a:3},
+];
+var tState={};
+function startTrivia(){
+  tState={idx:0,answered:new Array(TQ.length).fill(null),score:0};
+  document.getElementById('trivia-result').style.display='none';
+  document.getElementById('trivia-nav').style.display='flex';
+  renderTrivia();
+}
+function renderTrivia(){
+  var c=document.getElementById('trivia-container'); c.innerHTML='';
+  var q=TQ[tState.idx];
+  var div=document.createElement('div'); div.className='trivia-q';
+  div.innerHTML='<p class="q-num">Question '+(tState.idx+1)+' of '+TQ.length+'</p><p class="q-text">'+q.q+'</p><div class="trivia-options"></div>';
+  var opts=div.querySelector('.trivia-options');
+  q.opts.forEach(function(opt,oi){
+    var btn=document.createElement('button'); btn.className='trivia-opt'; btn.textContent=opt;
+    if(tState.answered[tState.idx]!==null){
+      btn.disabled=true;
+      if(oi===q.a) btn.classList.add('correct');
+      else if(oi===tState.answered[tState.idx]) btn.classList.add('wrong');
+    }
+    btn.onclick=function(){answerTrivia(tState.idx,oi);};
+    opts.appendChild(btn);
+  });
+  c.appendChild(div);
+  updateTriviaNav();
+}
+function answerTrivia(qi,oi){
+  if(tState.answered[qi]!==null) return;
+  tState.answered[qi]=oi;
+  if(oi===TQ[qi].a) tState.score++;
+  renderTrivia();
+}
+function triviaNav(dir){
+  tState.idx=Math.max(0,Math.min(TQ.length-1,tState.idx+dir));
+  renderTrivia();
+  if(tState.answered.every(function(a){return a!==null;})&&dir===1&&tState.idx===TQ.length-1){
+    setTimeout(showTriviaResult,500);
+  }
+}
+function updateTriviaNav(){
+  document.getElementById('tcounter').textContent=(tState.idx+1)+' / '+TQ.length;
+  document.getElementById('tprev').disabled=tState.idx===0;
+  var done=tState.answered.every(function(a){return a!==null;});
+  var nb=document.getElementById('tnext');
+  if(tState.idx===TQ.length-1&&done){nb.textContent='Results';nb.onclick=showTriviaResult;}
+  else{nb.textContent='Next';nb.onclick=function(){triviaNav(1);};}
+}
+function showTriviaResult(){
+  document.getElementById('trivia-container').innerHTML='';
+  document.getElementById('trivia-nav').style.display='none';
+  document.getElementById('trivia-result').style.display='block';
+  document.getElementById('trivia-score').textContent=tState.score+' / '+TQ.length;
+  var msgs=['Still some studying to do — more Aperol might help.','Not bad! You know the basics.','Good effort — you\'ve been paying attention.','Impressive! You know this couple well.','Perfect! Are you sure you\'re not Bruno or Sally?'];
+  document.getElementById('trivia-msg').textContent=msgs[Math.min(Math.floor(tState.score/TQ.length*(msgs.length-1)),msgs.length-1)];
 }
 
-// ── POLLS ─────────────────────────────────────────────────
-var pollsCache = [];
-var myVotes = JSON.parse(localStorage.getItem('my_votes')||'{}');
+// ── CROSSWORD ─────────────────────────────────────────────
+/*
+  Two fully verified crosswords — every letter run tested cell-by-cell.
+  Grid cells: '#' = black square, letter = answer.
+  CW1 words: APEROL, SCONE, TINKER (across) + POLO, ROME, SEA, NOON, LOBSTER (down)
+  CW2 words: HINGE, CORFU, ITALY (across) + NOIR, ENQUIRY (down)
+*/
 
-var SEED_POLLS = [
-  {question:'Who cries first?', options:['Bruno','Sally','Father of the bride','An unexpected guest']},
-  {question:'What time does Bruno fall asleep at the after-party?', options:['Before midnight','12–1am','1–2am','Still going at 3am']},
-  {question:'Weather on the day?', options:['Full Devon sunshine ☀️','Light drizzle 🌦️','Full monsoon 🌧️','All three in one day']},
-  {question:'How many Aperol Spritzes get consumed?', options:['Under 50','50–100','100–200','Lost count after 100']},
-  {question:'Will the hog roast run out?', options:['Yes — chaos ensues','No — plenty for all','There are leftovers','What hog roast?']},
-  {question:'Who gives the most chaotic speech?', options:['Groomsman Jamie','Father of the bride','Bruno','Sally']},
-  {question:"What is Bruno's first dance move?", options:['Dignified and smooth','Enthusiastic but risky','Full dad-dance energy','Refuses to move at all']},
-  {question:'Does anyone get lost on the way to Newton Ferrers?', options:['At least 3 cars','Just one — and they know who','Nobody — Google Maps saves the day','Everyone arrives somehow']},
+var CW_PUZZLES = [
+  // ══════════ PUZZLE 1: Devon & the drink ══════════
+  {
+    label: 'Puzzle 1 of 2',
+    rows: 7, cols: 8,
+    grid: [
+      ['#','A','P','E','R','O','L','#'],
+      ['#','#','O','#','O','#','O','#'],
+      ['#','#','L','#','M','#','B','#'],
+      ['S','C','O','N','E','#','S','#'],
+      ['E','#','#','O','#','#','T','#'],
+      ['A','#','#','O','#','#','E','#'],
+      ['#','T','I','N','K','E','R','#'],
+    ],
+    clues: {
+      across: [
+        {n:1, r:0, c:1, len:6, clue:'The drink that runs through their whole story'},
+        {n:5, r:3, c:0, len:5, clue:'Cream first — the only correct answer'},
+        {n:7, r:6, c:1, len:6, clue:"Sally's parents' boat — and a mischievous fairy"},
+      ],
+      down: [
+        {n:2, r:0, c:2, len:4, clue:'A sport, a shirt, and a mint'},
+        {n:3, r:0, c:4, len:4, clue:'City where Scotland lost and they drank more Aperol'},
+        {n:4, r:0, c:6, len:7, clue:'Devon coast classic, best with butter'},
+        {n:5, r:3, c:0, len:3, clue:'What surrounds the Devon coastline'},
+        {n:6, r:3, c:3, len:4, clue:'When the ceremony begins'},
+      ]
+    }
+  },
+  // ══════════ PUZZLE 2: The journey ══════════
+  {
+    label: 'Puzzle 2 of 2',
+    rows: 7, cols: 6,
+    grid: [
+      ['H','I','N','G','E','#'],
+      ['#','#','O','#','N','#'],
+      ['#','#','I','#','Q','#'],
+      ['C','O','R','F','U','#'],
+      ['#','#','#','#','I','#'],
+      ['#','#','#','#','R','#'],
+      ['I','T','A','L','Y','#'],
+    ],
+    clues: {
+      across: [
+        {n:1, r:0, c:0, len:5, clue:'The app that started it all'},
+        {n:4, r:3, c:0, len:5, clue:'Their first holiday together'},
+        {n:5, r:6, c:0, len:5, clue:'Country of the proposal'},
+      ],
+      down: [
+        {n:2, r:0, c:2, len:4, clue:'Dark and brooding — like Devon in November'},
+        {n:3, r:0, c:4, len:7, clue:'What you make when you cannot figure out the answer'},
+      ]
+    }
+  }
 ];
 
-async function loadPolls(){
-  var grid = document.getElementById('poll-grid');
-  try {
-    var {data, error} = await supa.from('polls').select('*').order('created_at',{ascending:true});
-    if(error) throw error;
-    if(!data || data.length === 0){
-      await seedPolls();
-      var res = await supa.from('polls').select('*').order('created_at',{ascending:true});
-      data = res.data || [];
-    } else {
-      // Patch any existing poll that still has 'Best man Jamie'
-      for(var i=0; i<data.length; i++){
-        var p = data[i];
-        var needsPatch = p.options && p.options.some(function(o){ return o.text === 'Best man Jamie'; });
-        if(needsPatch){
-          var fixed = p.options.map(function(o){
-            return o.text === 'Best man Jamie' ? {text:'Groomsman Jamie', votes:o.votes||0} : o;
-          });
-          await supa.from('polls').update({options: fixed}).eq('id', p.id);
-          data[i].options = fixed;
+var cwPuzzleIdx = 0;
+var cwInputs = [];
+var cwDir = 'across';
+var cwActive = null;
+
+function nextCWPuzzle() {
+  cwPuzzleIdx = (cwPuzzleIdx + 1) % CW_PUZZLES.length;
+  buildCW();
+  document.getElementById('cw-msg').className = 'game-msg';
+}
+
+function buildCW() {
+  var puz = CW_PUZZLES[cwPuzzleIdx];
+  document.getElementById('cw-puzzle-label').textContent = puz.label;
+  var g = document.getElementById('cw-grid'); g.innerHTML = '';
+  cwInputs = [];
+  cwActive = null;
+
+  // Number cells
+  var nums = {};
+  var n = 1;
+  for (var r = 0; r < puz.rows; r++) {
+    for (var c = 0; c < puz.cols; c++) {
+      if (puz.grid[r][c] === '#') continue;
+      var startA = (c === 0 || puz.grid[r][c-1] === '#') && (c+1 < puz.cols && puz.grid[r][c+1] !== '#');
+      var startD = (r === 0 || puz.grid[r-1][c] === '#') && (r+1 < puz.rows && puz.grid[r+1][c] !== '#');
+      if (startA || startD) { nums[r+','+c] = n++; }
+    }
+  }
+
+  for (var r = 0; r < puz.rows; r++) {
+    cwInputs.push([]);
+    var row = document.createElement('div'); row.className = 'cw-row';
+    for (var c = 0; c < puz.cols; c++) {
+      var cell = document.createElement('div');
+      if (puz.grid[r][c] === '#') {
+        cell.className = 'cw-cell black'; cwInputs[r].push(null);
+      } else {
+        cell.className = 'cw-cell';
+        if (nums[r+','+c]) {
+          var sp = document.createElement('span'); sp.className = 'cw-num';
+          sp.textContent = nums[r+','+c]; cell.appendChild(sp);
+        }
+        var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 1;
+        inp.dataset.r = r; inp.dataset.c = c;
+        inp.addEventListener('input', cwInput);
+        inp.addEventListener('focus', cwFocus);
+        inp.addEventListener('keydown', cwKeydown);
+        cell.appendChild(inp); cwInputs[r].push(inp);
+      }
+      row.appendChild(cell);
+    }
+    g.appendChild(row);
+  }
+  buildCWClues(nums);
+}
+
+function cwFocus(e) {
+  var r = parseInt(e.target.dataset.r), c = parseInt(e.target.dataset.c);
+  if (cwActive && cwActive.r === r && cwActive.c === c) {
+    cwDir = cwDir === 'across' ? 'down' : 'across';
+  }
+  cwActive = {r:r, c:c};
+  highlightCW();
+}
+
+function cwKeydown(e) {
+  var r = parseInt(e.target.dataset.r), c = parseInt(e.target.dataset.c);
+  if (e.key === 'Backspace' && !e.target.value) {
+    var pr = cwDir === 'across' ? r : r-1;
+    var pc = cwDir === 'across' ? c-1 : c;
+    if (pr >= 0 && pc >= 0 && cwInputs[pr] && cwInputs[pr][pc]) cwInputs[pr][pc].focus();
+    e.preventDefault();
+  } else if (e.key === 'ArrowRight') { cwDir='across'; moveNext(e.target,0,1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft')  { cwDir='across'; moveNext(e.target,0,-1); e.preventDefault(); }
+  else if (e.key === 'ArrowDown')  { cwDir='down';   moveNext(e.target,1,0);  e.preventDefault(); }
+  else if (e.key === 'ArrowUp')    { cwDir='down';   moveNext(e.target,-1,0); e.preventDefault(); }
+}
+
+function moveNext(inp, dr, dc) {
+  var r = parseInt(inp.dataset.r)+dr, c = parseInt(inp.dataset.c)+dc;
+  if (r >= 0 && r < CW_PUZZLES[cwPuzzleIdx].rows && c >= 0 && c < CW_PUZZLES[cwPuzzleIdx].cols && cwInputs[r] && cwInputs[r][c])
+    cwInputs[r][c].focus();
+}
+
+function cwInput(e) {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(-1);
+  if (e.target.value) {
+    var r = parseInt(e.target.dataset.r), c = parseInt(e.target.dataset.c);
+    var nr = cwDir==='down' ? r+1 : r, nc = cwDir==='down' ? c : c+1;
+    if (nr < CW_PUZZLES[cwPuzzleIdx].rows && nc < CW_PUZZLES[cwPuzzleIdx].cols && cwInputs[nr] && cwInputs[nr][nc])
+      cwInputs[nr][nc].focus();
+  }
+  highlightCW();
+}
+
+function highlightCW() {
+  var puz = CW_PUZZLES[cwPuzzleIdx];
+  document.querySelectorAll('.cw-cell input').forEach(function(i){ i.classList.remove('highlighted'); });
+  if (!cwActive) return;
+  var r = cwActive.r, c = cwActive.c;
+  if (cwDir === 'across') {
+    var s = c; while (s > 0 && puz.grid[r][s-1] !== '#') s--;
+    var e2 = c; while (e2 < puz.cols-1 && puz.grid[r][e2+1] !== '#') e2++;
+    for (var x = s; x <= e2; x++) if (cwInputs[r][x]) cwInputs[r][x].classList.add('highlighted');
+  } else {
+    var s = r; while (s > 0 && puz.grid[s-1][c] !== '#') s--;
+    var e2 = r; while (e2 < puz.rows-1 && puz.grid[e2+1][c] !== '#') e2++;
+    for (var y = s; y <= e2; y++) if (cwInputs[y][c]) cwInputs[y][c].classList.add('highlighted');
+  }
+}
+
+function buildCWClues(nums) {
+  var puz = CW_PUZZLES[cwPuzzleIdx];
+  var d = document.getElementById('cw-clues'); d.innerHTML = '<h4>Across</h4>';
+  puz.clues.across.forEach(function(cl) {
+    var p = document.createElement('p'); p.className = 'cw-clue';
+    var dispN = cl.n === Math.floor(cl.n) ? cl.n+'A' : Math.floor(cl.n)+'A';
+    p.innerHTML = '<strong>'+dispN+'</strong> '+cl.clue+' ('+cl.len+')';
+    p.onclick = function() { cwDir='across'; if(cwInputs[cl.r][cl.c]) cwInputs[cl.r][cl.c].focus(); highlightCW(); };
+    d.appendChild(p);
+  });
+  d.innerHTML += '<h4>Down</h4>';
+  puz.clues.down.forEach(function(cl) {
+    var p = document.createElement('p'); p.className = 'cw-clue';
+    var dispN = cl.n === Math.floor(cl.n) ? cl.n+'D' : Math.floor(cl.n)+'D';
+    p.innerHTML = '<strong>'+dispN+'</strong> '+cl.clue+' ('+cl.len+')';
+    p.onclick = function() { cwDir='down'; if(cwInputs[cl.r][cl.c]) cwInputs[cl.r][cl.c].focus(); highlightCW(); };
+    d.appendChild(p);
+  });
+}
+
+function checkCW() {
+  var puz = CW_PUZZLES[cwPuzzleIdx];
+  var wrong = 0, filled = 0;
+  for (var r = 0; r < puz.rows; r++) for (var c = 0; c < puz.cols; c++) {
+    var inp = cwInputs[r] && cwInputs[r][c];
+    if (inp) {
+      inp.classList.remove('correct-cell');
+      if (inp.value) {
+        filled++;
+        if (inp.value === puz.grid[r][c]) inp.classList.add('correct-cell');
+        else wrong++;
+      }
+    }
+  }
+  if (!filled) { showMsg('cw-msg','Fill in some answers first!','error'); return; }
+  if (wrong === 0) showMsg('cw-msg','🎉 All correct! Brilliant!','success');
+  else showMsg('cw-msg', wrong+' wrong — keep going!','error');
+}
+
+function revealCW() {
+  var puz = CW_PUZZLES[cwPuzzleIdx];
+  for (var r = 0; r < puz.rows; r++) for (var c = 0; c < puz.cols; c++) {
+    var inp = cwInputs[r] && cwInputs[r][c];
+    if (inp) { inp.value = puz.grid[r][c]; inp.classList.add('correct-cell'); }
+  }
+  showMsg('cw-msg','Revealed!','info');
+}
+
+function resetCW() {
+  for (var r = 0; r < CW_PUZZLES[cwPuzzleIdx].rows; r++)
+    for (var c = 0; c < CW_PUZZLES[cwPuzzleIdx].cols; c++) {
+      var inp = cwInputs[r] && cwInputs[r][c];
+      if (inp) { inp.value = ''; inp.classList.remove('correct-cell','highlighted'); }
+    }
+  document.getElementById('cw-msg').className = 'game-msg';
+}
+
+// ── SUDOKU ────────────────────────────────────────────────
+var PUZZLES = {
+  easy:{
+    p:[[5,3,0,0,7,0,0,0,0],[6,0,0,1,9,5,0,0,0],[0,9,8,0,0,0,0,6,0],[8,0,0,0,6,0,0,0,3],[4,0,0,8,0,3,0,0,1],[7,0,0,0,2,0,0,0,6],[0,6,0,0,0,0,2,8,0],[0,0,0,4,1,9,0,0,5],[0,0,0,0,8,0,0,7,9]],
+    s:[[5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],[8,5,9,7,6,1,4,2,3],[4,2,6,8,5,3,7,9,1],[7,1,3,9,2,4,8,5,6],[9,6,1,5,3,7,2,8,4],[2,8,7,4,1,9,6,3,5],[3,4,5,2,8,6,1,7,9]]
+  },
+  medium:{
+    p:[[0,0,0,2,6,0,7,0,1],[6,8,0,0,7,0,0,9,0],[1,9,0,0,0,4,5,0,0],[8,2,0,1,0,0,0,4,0],[0,0,4,6,0,2,9,0,0],[0,5,0,0,0,3,0,2,8],[0,0,9,3,0,0,0,7,4],[0,4,0,0,5,0,0,3,6],[7,0,3,0,1,8,0,0,0]],
+    s:[[4,3,5,2,6,9,7,8,1],[6,8,2,5,7,1,4,9,3],[1,9,7,8,3,4,5,6,2],[8,2,6,1,9,5,3,4,7],[3,7,4,6,8,2,9,1,5],[9,5,1,7,4,3,6,2,8],[5,1,9,3,2,6,8,7,4],[2,4,8,9,5,7,1,3,6],[7,6,3,4,1,8,2,5,9]]
+  },
+  hard:{
+    p:[[0,2,0,0,0,0,0,0,0],[0,0,0,6,0,0,0,0,3],[0,7,4,0,8,0,0,0,0],[0,0,0,0,0,3,0,0,2],[0,8,0,0,4,0,0,1,0],[6,0,0,5,0,0,0,0,0],[0,0,0,0,1,0,7,8,0],[5,0,0,0,0,9,0,0,0],[0,0,0,0,0,0,0,4,0]],
+    s:[[1,2,6,4,3,7,9,5,8],[8,9,5,6,2,1,4,7,3],[3,7,4,9,8,5,1,2,6],[4,5,7,1,9,3,8,6,2],[9,8,3,2,4,6,5,1,7],[6,1,2,5,7,8,3,9,4],[2,6,9,3,1,4,7,8,5],[5,4,8,7,6,9,2,3,1],[7,3,1,8,5,2,6,4,9]]
+  }
+};
+var sudSol=[], sudGiven=[];
+function newSudoku(d){
+  var puz=PUZZLES[d]; sudSol=puz.s; sudGiven=puz.p.map(function(r){return r.map(function(v){return v!==0;});});
+  var grid=document.getElementById('sudoku-grid'); grid.innerHTML='';
+  for(var r=0;r<9;r++) for(var c=0;c<9;c++){
+    var cell=document.createElement('div'); cell.className='sudoku-cell'+(sudGiven[r][c]?' given':'');
+    var inp=document.createElement('input'); inp.type='text'; inp.maxLength=1;
+    inp.dataset.r=r; inp.dataset.c=c;
+    if(puz.p[r][c]){inp.value=puz.p[r][c];inp.readOnly=true;}
+    inp.addEventListener('input',function(e){e.target.value=e.target.value.replace(/[^1-9]/,'').slice(-1);});
+    cell.appendChild(inp); grid.appendChild(cell);
+  }
+  document.getElementById('sudoku-msg').className='game-msg';
+}
+function checkSudoku(){
+  var cells=document.querySelectorAll('#sudoku-grid .sudoku-cell');
+  var ok=true;
+  cells.forEach(function(cell){
+    var inp=cell.querySelector('input');
+    var r=parseInt(inp.dataset.r), c=parseInt(inp.dataset.c);
+    cell.classList.remove('error','ok');
+    if(inp.value){
+      if(parseInt(inp.value)===sudSol[r][c]) cell.classList.add('ok');
+      else{cell.classList.add('error');ok=false;}
+    } else if(!sudGiven[r][c]) ok=false;
+  });
+  if(ok) showMsg('sudoku-msg','🎉 Solved!','success');
+  else showMsg('sudoku-msg','Some cells are wrong.','error');
+}
+function solveSudoku(){
+  document.querySelectorAll('#sudoku-grid .sudoku-cell').forEach(function(cell){
+    var inp=cell.querySelector('input');
+    var r=parseInt(inp.dataset.r), c=parseInt(inp.dataset.c);
+    inp.value=sudSol[r][c]; cell.classList.add('ok'); cell.classList.remove('error');
+  });
+  showMsg('sudoku-msg','Solved!','info');
+}
+
+// ── COUNTDOWN ─────────────────────────────────────────────
+(function() {
+  var wedding = new Date('2027-09-18T00:00:00');
+  var now = new Date();
+  var diff = wedding - now;
+  var el = document.getElementById('countdown-text');
+  if (!el) return;
+  if (diff <= 0) { el.textContent = 'The big day is here!'; return; }
+  var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  el.textContent = days + (days === 1 ? ' day to go' : ' days to go');
+})();
+
+// ── SUDOKU KEYBOARD NAVIGATION ─────────────────────────────
+document.addEventListener('keydown', function(e) {
+  var active = document.activeElement;
+  if (!active || active.closest('#sudoku-grid') === null) return;
+  var r = parseInt(active.dataset.r), c = parseInt(active.dataset.c);
+  if (isNaN(r) || isNaN(c)) return;
+  var moves = {ArrowUp:[-1,0], ArrowDown:[1,0], ArrowLeft:[0,-1], ArrowRight:[0,1]};
+  if (moves[e.key]) {
+    e.preventDefault();
+    var nr = r + moves[e.key][0], nc = c + moves[e.key][1];
+    var next = document.querySelector('#sudoku-grid input[data-r="'+nr+'"][data-c="'+nc+'"]');
+    if (next) next.focus();
+  }
+});
+
+// ── INIT ──────────────────────────────────────────────────
+newWordleGame(); startTrivia(); buildCW(); newSudoku('easy');
+
+// ── 2048 ──────────────────────────────────────────────────
+var T48 = { grid:[], score:0, best:0, won:false, over:false, initted:false };
+
+// Tile colours matching the site palette
+var T48_COLORS = {
+  0:   {bg:'rgba(238,228,218,0.35)', fg:'transparent'},
+  2:   {bg:'#eee4da', fg:'#6b6056'},
+  4:   {bg:'#ede0c8', fg:'#6b6056'},
+  8:   {bg:'#C4894A', fg:'#fff'},
+  16:  {bg:'#b8793a', fg:'#fff'},
+  32:  {bg:'#5C7A5C', fg:'#fff'},
+  64:  {bg:'#4a6a4a', fg:'#fff'},
+  128: {bg:'#4A7FA8', fg:'#fff'},
+  256: {bg:'#3a6f98', fg:'#fff'},
+  512: {bg:'#2C2C2A', fg:'#fff'},
+  1024:{bg:'#1a1a18', fg:'#fff'},
+  2048:{bg:'#C4894A', fg:'#fff'},
+};
+
+function t48Color(v){
+  return T48_COLORS[v] || {bg:'#2C2C2A',fg:'#fff'};
+}
+
+function t48New(){
+  T48.grid=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  T48.score=0; T48.won=false; T48.over=false;
+  T48.best=parseInt(localStorage.getItem('t48_best')||'0');
+  document.getElementById('t48-best').textContent=T48.best;
+  document.getElementById('t48-msg').className='game-msg';
+  t48AddTile(); t48AddTile(); t48Render();
+  T48.initted=true;
+}
+
+function t48AddTile(){
+  var empty=[];
+  for(var r=0;r<4;r++) for(var c=0;c<4;c++) if(T48.grid[r][c]===0) empty.push([r,c]);
+  if(!empty.length) return;
+  var pos=empty[Math.floor(Math.random()*empty.length)];
+  T48.grid[pos[0]][pos[1]]=Math.random()<0.9?2:4;
+}
+
+function t48Render(){
+  var board=document.getElementById('t48-board');
+  // Remove old tiles (not the background cells)
+  board.querySelectorAll('.t48-tile').forEach(function(el){el.remove();});
+  // Get cell positions
+  var cells=board.querySelectorAll('.t48-cell');
+  for(var r=0;r<4;r++){
+    for(var c=0;c<4;c++){
+      var v=T48.grid[r][c];
+      if(!v) continue;
+      var cell=cells[r*4+c];
+      var rect=cell.getBoundingClientRect();
+      var boardRect=board.getBoundingClientRect();
+      var tile=document.createElement('div');
+      tile.className='t48-tile pop';
+      var col=t48Color(v);
+      tile.style.background=col.bg;
+      tile.style.color=col.fg;
+      tile.style.fontSize=v>=1000?'1.4rem':v>=100?'1.8rem':'2rem';
+      tile.style.left=(rect.left-boardRect.left)+'px';
+      tile.style.top=(rect.top-boardRect.top)+'px';
+      tile.textContent=v;
+      board.appendChild(tile);
+    }
+  }
+  document.getElementById('t48-score').textContent=T48.score;
+  if(T48.score>T48.best){
+    T48.best=T48.score;
+    localStorage.setItem('t48_best',T48.best);
+    document.getElementById('t48-best').textContent=T48.best;
+  }
+}
+
+// Slide a single row left — returns {row, points, moved}
+function t48SlideLeft(row){
+  var r=row.filter(function(v){return v>0;}); // compact
+  var pts=0, moved=row.some(function(v,i){return v!==r[i]||(!r[i]&&v);});
+  for(var i=0;i<r.length-1;i++){
+    if(r[i]===r[i+1]){ r[i]*=2; pts+=r[i]; r[i+1]=0; i++; moved=true; }
+  }
+  r=r.filter(function(v){return v>0;});
+  while(r.length<4) r.push(0);
+  return {row:r, points:pts, moved:moved||row.some(function(v,i){return v!==r[i];})};
+}
+
+function t48Move(dir){
+  if(T48.over||T48.won) return;
+  var moved=false, pts=0;
+  var g=T48.grid;
+
+  function getRow(r){ return [g[r][0],g[r][1],g[r][2],g[r][3]]; }
+  function getCol(c){ return [g[0][c],g[1][c],g[2][c],g[3][c]]; }
+  function setRow(r,row){ g[r][0]=row[0];g[r][1]=row[1];g[r][2]=row[2];g[r][3]=row[3]; }
+  function setCol(c,col){ g[0][c]=col[0];g[1][c]=col[1];g[2][c]=col[2];g[3][c]=col[3]; }
+  function rev(a){ return a.slice().reverse(); }
+
+  if(dir==='left'){
+    for(var r=0;r<4;r++){ var res=t48SlideLeft(getRow(r)); setRow(r,res.row); pts+=res.points; if(res.moved)moved=true; }
+  } else if(dir==='right'){
+    for(var r=0;r<4;r++){ var res=t48SlideLeft(rev(getRow(r))); setRow(r,rev(res.row)); pts+=res.points; if(res.moved)moved=true; }
+  } else if(dir==='up'){
+    for(var c=0;c<4;c++){ var res=t48SlideLeft(getCol(c)); setCol(c,res.row); pts+=res.points; if(res.moved)moved=true; }
+  } else if(dir==='down'){
+    for(var c=0;c<4;c++){ var res=t48SlideLeft(rev(getCol(c))); setCol(c,rev(res.row)); pts+=res.points; if(res.moved)moved=true; }
+  }
+
+  if(!moved) return;
+  T48.score+=pts;
+  t48AddTile();
+  t48Render();
+
+  // Check win
+  if(!T48.won){
+    for(var r=0;r<4;r++) for(var c=0;c<4;c++) if(T48.grid[r][c]===2048){ T48.won=true; t48ShowMsg('win'); return; }
+  }
+  // Check lose
+  if(t48IsOver()){ T48.over=true; t48ShowMsg('lose'); t48SaveScore(); }
+}
+
+function t48IsOver(){
+  for(var r=0;r<4;r++) for(var c=0;c<4;c++){
+    if(T48.grid[r][c]===0) return false;
+    if(c<3&&T48.grid[r][c]===T48.grid[r][c+1]) return false;
+    if(r<3&&T48.grid[r][c]===T48.grid[r+1][c]) return false;
+  }
+  return true;
+}
+
+function t48ShowMsg(type){
+  var msg=document.getElementById('t48-msg');
+  if(type==='win'){
+    msg.innerHTML='<div class="sol-win-banner"><h3>You reached 2048! 🎉</h3><p style="opacity:0.85">Keep going or start a new game.</p></div>';
+    msg.className='game-msg show';
+    t48SaveScore();
+  } else {
+    msg.innerHTML='<div style="background:#fdf0e8;border:1px solid var(--warm-light);border-radius:4px;padding:1rem 1.5rem;text-align:center"><p style="font-family:\'Cormorant Garamond\',serif;font-size:1.4rem;margin-bottom:0.4rem">Game over</p><p style="color:var(--ink-soft);font-size:0.88rem">Score: '+T48.score+'</p></div>';
+    msg.className='game-msg show';
+  }
+}
+
+function t48SaveScore(){
+  var best=0;
+  for(var r=0;r<4;r++) for(var c=0;c<4;c++) if(T48.grid[r][c]>best) best=T48.grid[r][c];
+  var name=prompt('Enter your name for the leaderboard:','');
+  if(!name||!name.trim()) return;
+  sbSaveScore('2048', name.trim(), T48.score, {best_tile:best});
+  setTimeout(t48RenderLeaderboard, 500);
+}
+
+function t48RenderLeaderboard(){
+  sbGetScores('2048',10).then(function(rows){
+    var el=document.getElementById('t48-scores-list');
+    if(!el) return;
+    if(!rows.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — play to get on the board!</p>';return;}
+    el.innerHTML=rows.map(function(s,i){
+      var best=s.meta&&s.meta.best_tile?s.meta.best_tile:'';
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span>'+
+        '<span style="color:var(--warm);font-size:0.82rem;font-weight:600">'+best+'</span></div>';
+    }).join('');
+  });
+}
+
+// Keyboard
+document.addEventListener('keydown',function(e){
+  if(!document.getElementById('panel-twentyfourtyeight').classList.contains('active')) return;
+  var map={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down'};
+  if(map[e.key]){ e.preventDefault(); t48Move(map[e.key]); }
+});
+
+// Touch/swipe
+(function(){
+  var sx,sy;
+  var board=document.getElementById('t48-board');
+  if(!board) return;
+  board.addEventListener('touchstart',function(e){
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+  },{passive:true});
+  board.addEventListener('touchend',function(e){
+    if(sx===undefined) return;
+    var dx=e.changedTouches[0].clientX-sx;
+    var dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<20&&Math.abs(dy)<20) return;
+    if(Math.abs(dx)>Math.abs(dy)) t48Move(dx>0?'right':'left');
+    else t48Move(dy>0?'down':'up');
+    sx=sy=undefined;
+  },{passive:true});
+})();
+
+
+// ── SNAKE ─────────────────────────────────────────────────
+var SN = {
+  COLS:18, ROWS:18, CELL:20,
+  snake:[], dir:{x:1,y:0}, nextDir:{x:1,y:0},
+  food:{x:0,y:0}, score:0, best:0,
+  state:'idle', // idle|playing|paused|dead
+  loop:null, speed:150, level:1,
+  initted:false, canvas:null, ctx:null
+};
+// Themed food items
+var SN_FOOD = ['🍊','🥂','🌊','💒','💐','🦞','🍋','🎊'];
+
+function snInit(){
+  SN.canvas = document.getElementById('sn-canvas');
+  SN.ctx = SN.canvas.getContext('2d');
+  // Responsive canvas size
+  var panel = document.getElementById('panel-snake');
+  var w = Math.min(panel.offsetWidth - 40, 360);
+  w = Math.floor(w / SN.COLS) * SN.COLS;
+  SN.CELL = w / SN.COLS;
+  SN.canvas.width = w;
+  SN.canvas.height = w; // square
+  SN.ROWS = SN.COLS;
+  SN.best = parseInt(localStorage.getItem('sn_best')||'0');
+  document.getElementById('sn-best').textContent = SN.best;
+  snNewGame();
+  SN.initted = true;
+}
+
+function snNewGame(){
+  clearInterval(SN.loop);
+  var mid = Math.floor(SN.COLS/2);
+  SN.snake = [{x:mid,y:mid},{x:mid-1,y:mid},{x:mid-2,y:mid}];
+  SN.dir = {x:1,y:0}; SN.nextDir = {x:1,y:0};
+  SN.score = 0; SN.speed = 150; SN.level = 1; SN.state = 'playing';
+  document.getElementById('sn-score').textContent = 0;
+  document.getElementById('sn-level').textContent = 1;
+  document.getElementById('sn-msg').className = 'game-msg';
+  SN.foodEmoji = SN_FOOD[Math.floor(Math.random()*SN_FOOD.length)];
+  snPlaceFood();
+  SN.loop = setInterval(snStep, SN.speed);
+  snDraw();
+}
+
+function snPlaceFood(){
+  var occupied = new Set(SN.snake.map(function(s){return s.x+','+s.y;}));
+  var tries = 0;
+  do {
+    SN.food = {x:Math.floor(Math.random()*SN.COLS), y:Math.floor(Math.random()*SN.ROWS)};
+    tries++;
+  } while(occupied.has(SN.food.x+','+SN.food.y) && tries < 200);
+}
+
+function snDir(dx, dy){
+  // Prevent reversing
+  if(SN.state !== 'playing') { if(SN.state==='dead'||SN.state==='idle') snNewGame(); return; }
+  if(dx !== 0 && SN.dir.x !== 0) return;
+  if(dy !== 0 && SN.dir.y !== 0) return;
+  SN.nextDir = {x:dx, y:dy};
+}
+
+function snDown(){ snDir(0,1); }
+
+function snPause(){
+  if(SN.state==='playing'){
+    SN.state='paused';
+    clearInterval(SN.loop);
+    snDraw();
+  } else if(SN.state==='paused'){
+    SN.state='playing';
+    SN.loop = setInterval(snStep, SN.speed);
+  }
+}
+
+function snStep(){
+  SN.dir = SN.nextDir;
+  var head = {x: SN.snake[0].x + SN.dir.x, y: SN.snake[0].y + SN.dir.y};
+
+  // Wall collision
+  if(head.x < 0 || head.x >= SN.COLS || head.y < 0 || head.y >= SN.ROWS){
+    snDie(); return;
+  }
+  // Self collision
+  for(var i=0; i<SN.snake.length; i++){
+    if(SN.snake[i].x===head.x && SN.snake[i].y===head.y){ snDie(); return; }
+  }
+
+  SN.snake.unshift(head);
+
+  // Ate food?
+  if(head.x===SN.food.x && head.y===SN.food.y){
+    SN.score += 10 * SN.level;
+    document.getElementById('sn-score').textContent = SN.score;
+    if(SN.score > SN.best){
+      SN.best = SN.score;
+      localStorage.setItem('sn_best', SN.best);
+      document.getElementById('sn-best').textContent = SN.best;
+    }
+    // Speed up every 5 food
+    if(SN.score % 50 === 0){
+      SN.level++;
+      SN.speed = Math.max(60, SN.speed - 15);
+      document.getElementById('sn-level').textContent = SN.level;
+      clearInterval(SN.loop);
+      SN.loop = setInterval(snStep, SN.speed);
+    }
+    SN.foodEmoji = SN_FOOD[Math.floor(Math.random()*SN_FOOD.length)];
+    snPlaceFood();
+  } else {
+    SN.snake.pop();
+  }
+  snDraw();
+}
+
+function snDie(){
+  clearInterval(SN.loop);
+  SN.state = 'dead';
+  snDraw();
+  var msg = document.getElementById('sn-msg');
+  msg.innerHTML = '<div style="background:#fdf0e8;border:1px solid var(--warm-light);border-radius:4px;padding:1rem 1.5rem;text-align:center">' +
+    '<p style="font-family:\'Cormorant Garamond\',serif;font-size:1.4rem;margin-bottom:0.4rem">Game over 🐍</p>' +
+    '<p style="color:var(--ink-soft);font-size:0.88rem;margin-bottom:0.8rem">Score: '+SN.score+'</p>' +
+    '<button class="btn btn-sage" onclick="snNewGame()">Play again</button></div>';
+  msg.className = 'game-msg show';
+  snSaveScore();
+}
+
+function snSaveScore(){
+  if(SN.score === 0) return;
+  var name = prompt('Enter your name for the leaderboard:','');
+  if(!name||!name.trim()) return;
+  sbSaveScore('snake', name.trim(), SN.score, {level:SN.level});
+  setTimeout(snRenderLeaderboard, 500);
+}
+
+function snRenderLeaderboard(){
+  var el = document.getElementById('sn-scores-list');
+  if(!el) return;
+  sbGetScores('snake',10).then(function(rows){
+    if(!rows.length){
+      el.innerHTML = '<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — start munching!</p>';
+      return;
+    }
+    el.innerHTML = rows.map(function(s,i){
+      var lv = s.meta&&s.meta.level?s.meta.level:1;
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>' +
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span>' +
+        '<span style="color:var(--warm);font-size:0.78rem;font-weight:600">Lv '+lv+'</span></div>';
+    }).join('');
+  });
+}
+
+function snDraw(){
+  var ctx = SN.ctx, C = SN.CELL, cols = SN.COLS, rows = SN.ROWS;
+  var W = cols*C, H = rows*C;
+  // Polyfill roundRect for older browsers
+  if(!ctx.roundRect){
+    ctx.roundRect = function(x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+    };
+  }
+
+  // Background
+  ctx.fillStyle = '#2C2C2A';
+  ctx.fillRect(0,0,W,H);
+
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  for(var i=0;i<=cols;i++){ ctx.beginPath(); ctx.moveTo(i*C,0); ctx.lineTo(i*C,H); ctx.stroke(); }
+  for(var j=0;j<=rows;j++){ ctx.beginPath(); ctx.moveTo(0,j*C); ctx.lineTo(W,j*C); ctx.stroke(); }
+
+  // Food
+  ctx.font = Math.floor(C*0.75)+'px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(SN.foodEmoji, SN.food.x*C+C/2, SN.food.y*C+C/2);
+
+  // Snake body
+  SN.snake.forEach(function(seg, i){
+    var t = i / Math.max(SN.snake.length-1, 1);
+    // Gradient: head=sage, tail=darker
+    var r1=92,g1=122,b1=92, r2=44,g2=66,b2=44;
+    var r=Math.round(r1+(r2-r1)*t), g=Math.round(g1+(g2-g1)*t), b=Math.round(b1+(b2-b1)*t);
+    ctx.fillStyle = 'rgb('+r+','+g+','+b+')';
+    var pad = i===0 ? 1 : 2;
+    ctx.beginPath();
+    ctx.roundRect(seg.x*C+pad, seg.y*C+pad, C-pad*2, C-pad*2, i===0?4:2);
+    ctx.fill();
+    // Eyes on head
+    if(i===0){
+      ctx.fillStyle = '#fff';
+      var ex1=seg.x*C+C*0.3, ey1=seg.y*C+C*0.3;
+      var ex2=seg.x*C+C*0.7, ey2=seg.y*C+C*0.3;
+      if(SN.dir.x===1){  ex1=seg.x*C+C*0.7; ey1=seg.y*C+C*0.3; ex2=seg.x*C+C*0.7; ey2=seg.y*C+C*0.7; }
+      if(SN.dir.x===-1){ ex1=seg.x*C+C*0.3; ey1=seg.y*C+C*0.3; ex2=seg.x*C+C*0.3; ey2=seg.y*C+C*0.7; }
+      if(SN.dir.y===1){  ex1=seg.x*C+C*0.3; ey1=seg.y*C+C*0.7; ex2=seg.x*C+C*0.7; ey2=seg.y*C+C*0.7; }
+      ctx.beginPath(); ctx.arc(ex1,ey1,C*0.1,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2,ey2,C*0.1,0,Math.PI*2); ctx.fill();
+    }
+  });
+
+  // Dead overlay
+  if(SN.state==='dead'){
+    ctx.fillStyle='rgba(44,44,42,0.55)';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // Paused overlay
+  if(SN.state==='paused'){
+    ctx.fillStyle='rgba(44,44,42,0.55)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff';
+    ctx.font='bold '+(C*1.2)+'px Jost,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('PAUSED',W/2,H/2);
+  }
+
+  // Idle — show start prompt
+  if(SN.state==='idle'){
+    ctx.fillStyle='rgba(44,44,42,0.7)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#fff';
+    ctx.font='bold '+(C*0.9)+'px Jost,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Press arrow key to start',W/2,H/2);
+  }
+}
+
+// Keyboard controls
+document.addEventListener('keydown', function(e){
+  if(!document.getElementById('panel-snake').classList.contains('active')) return;
+  var map = {ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0}, ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}};
+  if(map[e.key]){
+    e.preventDefault();
+    if(SN.state==='idle'||SN.state==='dead') { snNewGame(); return; }
+    var d = map[e.key];
+    if(d.x !== 0 && SN.dir.x !== 0) return;
+    if(d.y !== 0 && SN.dir.y !== 0) return;
+    SN.nextDir = d;
+  }
+  if(e.key===' '||e.key==='p'){ e.preventDefault(); snPause(); }
+});
+
+// ── MINESWEEPER ───────────────────────────────────────────
+var MS = {
+  rows:9, cols:9, mines:10,
+  grid:[], // {mine,count,revealed,flagged}
+  state:'idle', // idle|playing|won|lost
+  timer:null, elapsed:0,
+  firstClick:true, difficulty:'easy',
+  initted:false
+};
+var MS_PRESETS = {
+  easy:   {rows:9,  cols:9,  mines:10},
+  medium: {rows:16, cols:16, mines:40},
+  hard:   {rows:16, cols:30, mines:99}
+};
+
+function msNew(diff){
+  clearInterval(MS.timer);
+  if(diff) MS.difficulty=diff;
+  var p=MS_PRESETS[MS.difficulty];
+  MS.rows=p.rows; MS.cols=p.cols; MS.mines=p.mines;
+  MS.grid=[]; MS.state='idle'; MS.elapsed=0; MS.firstClick=true;
+  document.getElementById('ms-face').textContent='🙂';
+  document.getElementById('ms-timer').textContent='0';
+  document.getElementById('ms-mines').textContent=MS.mines;
+  document.getElementById('ms-msg').className='game-msg';
+  // Build empty grid
+  for(var r=0;r<MS.rows;r++){
+    MS.grid.push([]);
+    for(var c=0;c<MS.cols;c++)
+      MS.grid[r].push({mine:false,count:0,revealed:false,flagged:false});
+  }
+  msRender();
+  MS.initted=true;
+}
+
+function msPlantMines(safeR, safeC){
+  // Guarantee first click and its neighbours are safe
+  var safe=new Set();
+  for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+    var nr=safeR+dr, nc=safeC+dc;
+    if(nr>=0&&nr<MS.rows&&nc>=0&&nc<MS.cols) safe.add(nr+','+nc);
+  }
+  var placed=0;
+  while(placed<MS.mines){
+    var r=Math.floor(Math.random()*MS.rows);
+    var c=Math.floor(Math.random()*MS.cols);
+    if(!MS.grid[r][c].mine&&!safe.has(r+','+c)){
+      MS.grid[r][c].mine=true; placed++;
+    }
+  }
+  // Calculate neighbour counts
+  for(var r=0;r<MS.rows;r++) for(var c=0;c<MS.cols;c++){
+    if(MS.grid[r][c].mine) continue;
+    var cnt=0;
+    for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+      var nr=r+dr, nc=c+dc;
+      if(nr>=0&&nr<MS.rows&&nc>=0&&nc<MS.cols&&MS.grid[nr][nc].mine) cnt++;
+    }
+    MS.grid[r][c].count=cnt;
+  }
+}
+
+function msReveal(r,c){
+  var cell=MS.grid[r][c];
+  if(cell.revealed||cell.flagged) return;
+  cell.revealed=true;
+  if(cell.mine){ msLose(r,c); return; }
+  // Flood fill empty cells
+  if(cell.count===0){
+    for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+      var nr=r+dr, nc=c+dc;
+      if(nr>=0&&nr<MS.rows&&nc>=0&&nc<MS.cols&&!MS.grid[nr][nc].revealed)
+        msReveal(nr,nc);
+    }
+  }
+}
+
+function msClick(r,c){
+  if(MS.state==='won'||MS.state==='lost') return;
+  var cell=MS.grid[r][c];
+  if(cell.flagged) return;
+
+  if(MS.firstClick){
+    MS.firstClick=false;
+    MS.state='playing';
+    msPlantMines(r,c);
+    MS.timer=setInterval(function(){
+      MS.elapsed++;
+      document.getElementById('ms-timer').textContent=MS.elapsed;
+    },1000);
+  }
+
+  if(cell.revealed){
+    // Chord: if flagged neighbours == count, reveal all unflagged neighbours
+    var flags=0;
+    for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+      var nr=r+dr, nc=c+dc;
+      if(nr>=0&&nr<MS.rows&&nc>=0&&nc<MS.cols&&MS.grid[nr][nc].flagged) flags++;
+    }
+    if(flags===cell.count){
+      for(var dr=-1;dr<=1;dr++) for(var dc=-1;dc<=1;dc++){
+        var nr=r+dr, nc=c+dc;
+        if(nr>=0&&nr<MS.rows&&nc>=0&&nc<MS.cols&&!MS.grid[nr][nc].flagged&&!MS.grid[nr][nc].revealed)
+          msReveal(nr,nc);
+      }
+    }
+  } else {
+    msReveal(r,c);
+  }
+
+  if(MS.state!=='lost') msCheckWin();
+  msRender();
+}
+
+function msFlag(r,c){
+  if(MS.state==='won'||MS.state==='lost') return;
+  var cell=MS.grid[r][c];
+  if(cell.revealed) return;
+  cell.flagged=!cell.flagged;
+  var flagCount=0;
+  for(var i=0;i<MS.rows;i++) for(var j=0;j<MS.cols;j++) if(MS.grid[i][j].flagged) flagCount++;
+  document.getElementById('ms-mines').textContent=MS.mines-flagCount;
+  msRender();
+}
+
+function msLose(trigR,trigC){
+  clearInterval(MS.timer);
+  MS.state='lost';
+  MS.trigR=trigR; MS.trigC=trigC;
+  document.getElementById('ms-face').textContent='😵';
+  // Reveal all mines
+  for(var r=0;r<MS.rows;r++) for(var c=0;c<MS.cols;c++)
+    if(MS.grid[r][c].mine) MS.grid[r][c].revealed=true;
+}
+
+function msCheckWin(){
+  for(var r=0;r<MS.rows;r++) for(var c=0;c<MS.cols;c++){
+    var cell=MS.grid[r][c];
+    if(!cell.mine&&!cell.revealed) return;
+  }
+  clearInterval(MS.timer);
+  MS.state='won';
+  document.getElementById('ms-face').textContent='🥳';
+  var msg=document.getElementById('ms-msg');
+  msg.innerHTML='<div class="sol-win-banner"><h3>Board cleared! 🎉</h3><p style="opacity:0.85">'+
+    MS.difficulty+' · '+MS.elapsed+'s</p></div>';
+  msg.className='game-msg show';
+  msSaveScore();
+}
+
+function msSaveScore(){
+  var name=prompt('Enter your name for the leaderboard:','');
+  if(!name||!name.trim()) return;
+  // Score = negative time so lower time = higher score in our shared table
+  sbSaveScore('minesweeper', name.trim(), MS.elapsed, {difficulty:MS.difficulty});
+  setTimeout(msRenderLeaderboard, 500);
+}
+
+function msRenderLeaderboard(){
+  var el=document.getElementById('ms-scores-list');
+  if(!el) return;
+  var labels={easy:'Easy (9×9)',medium:'Medium (16×16)',hard:'Hard (16×30)'};
+  var diffs=['easy','medium','hard'];
+  // Fetch all minesweeper scores, then group by difficulty client-side
+  sbGetScores('minesweeper',50).then(function(rows){
+    var grouped={easy:[],medium:[],hard:[]};
+    rows.forEach(function(r){
+      var d=r.meta&&r.meta.difficulty?r.meta.difficulty:'easy';
+      if(grouped[d]) grouped[d].push(r);
+    });
+    var html='';
+    diffs.forEach(function(d){
+      var list=grouped[d].sort(function(a,b){return a.score-b.score;}).slice(0,5);
+      if(!list.length) return;
+      html+='<p style="font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--warm);margin:1rem 0 0.4rem">'+labels[d]+'</p>';
+      list.forEach(function(s,i){
+        html+='<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+          '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'s</span></div>';
+      });
+    });
+    el.innerHTML=html||'<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No wins yet — good luck!</p>';
+  });
+}
+
+function msRender(){
+  var board=document.getElementById('ms-board');
+  board.style.gridTemplateColumns='repeat('+MS.cols+',1fr)';
+  board.innerHTML='';
+  for(var r=0;r<MS.rows;r++){
+    for(var c=0;c<MS.cols;c++){
+      var cell=MS.grid[r][c];
+      var el=document.createElement('div');
+      var cls='ms-cell';
+      if(cell.revealed){
+        cls+=' revealed';
+        if(cell.mine){
+          cls+=' mine';
+          if(MS.trigR===r&&MS.trigC===c) cls+=' mine-trigger';
+          el.textContent='💣';
+        } else if(cell.count>0){
+          cls+=' n'+cell.count;
+          el.textContent=cell.count;
+        }
+      } else if(cell.flagged){
+        cls+=' flagged';
+        el.textContent='🚩';
+      } else {
+        cls+=' hidden';
+      }
+      if(MS.state==='won'&&!cell.revealed) cls+=' ms-win-flash';
+      el.className=cls;
+      // Events — use closure
+      (function(row,col){
+        el.addEventListener('click',function(){ msClick(row,col); });
+        el.addEventListener('contextmenu',function(e){ e.preventDefault(); msFlag(row,col); });
+        // Long-press for mobile flagging
+        var lp;
+        el.addEventListener('touchstart',function(e){
+          lp=setTimeout(function(){ msFlag(row,col); msRender(); },400);
+        },{passive:true});
+        el.addEventListener('touchend',function(){ clearTimeout(lp); },{passive:true});
+        el.addEventListener('touchmove',function(){ clearTimeout(lp); },{passive:true});
+      })(r,c);
+      board.appendChild(el);
+    }
+  }
+}
+var solInitted=false;
+var SOL = {
+  stock:[], waste:[], foundations:[[],[],[],[]],
+  tableau:[[],[],[],[],[],[],[]],
+  history:[], moves:0, timer:null, elapsed:0, won:false,
+  sel:null  // {src:'waste'|'tableau'|'foundation', col:n, idx:n}
+};
+var SUITS = ['♠','♥','♦','♣'];
+var SUIT_NAMES = ['spades','hearts','diamonds','clubs'];
+var RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+function solIsRed(suit){return suit==='♥'||suit==='♦';}
+function solRankIdx(r){return RANKS.indexOf(r);}
+
+function solNew(){
+  clearInterval(SOL.timer);
+  var deck=[];
+  SUITS.forEach(s=>RANKS.forEach(r=>deck.push({r,s,up:false})));
+  for(var i=deck.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  SOL.stock=deck; SOL.waste=[]; SOL.foundations=[[],[],[],[]];
+  SOL.tableau=[[],[],[],[],[],[],[]];
+  SOL.history=[]; SOL.moves=0; SOL.elapsed=0; SOL.won=false; SOL.sel=null;
+  for(var col=0;col<7;col++){
+    for(var row=0;row<=col;row++){
+      var card=SOL.stock.pop();
+      card.up=(row===col);
+      SOL.tableau[col].push(card);
+    }
+  }
+  document.getElementById('sol-submit-btn').style.display='none';
+  document.getElementById('sol-msg').className='game-msg';
+  SOL.timer=setInterval(solTick,1000);
+  solRender(); solUpdateStats();
+}
+
+function solTick(){
+  if(SOL.won) return;
+  SOL.elapsed++;
+  solUpdateStats();
+}
+
+function solUpdateStats(){
+  var m=SOL.elapsed, s=Math.floor(m/60)+':'+(m%60<10?'0':'')+m%60;
+  document.getElementById('sol-timer').textContent=s;
+  document.getElementById('sol-moves').textContent=SOL.moves+' move'+(SOL.moves===1?'':'s');
+}
+
+function solSave(){
+  SOL.history.push(JSON.parse(JSON.stringify({
+    stock:SOL.stock,waste:SOL.waste,foundations:SOL.foundations,tableau:SOL.tableau
+  })));
+  if(SOL.history.length>60) SOL.history.shift();
+}
+
+function solUndo(){
+  if(!SOL.history.length) return;
+  var s=SOL.history.pop();
+  SOL.stock=s.stock; SOL.waste=s.waste; SOL.foundations=s.foundations; SOL.tableau=s.tableau;
+  SOL.sel=null; SOL.moves=Math.max(0,SOL.moves-1);
+  solRender(); solUpdateStats();
+}
+
+function solDraw(){
+  solSave();
+  SOL.sel=null;
+  if(SOL.stock.length===0){
+    // flip waste back
+    SOL.stock=SOL.waste.slice().reverse().map(c=>{c.up=false;return c;});
+    SOL.waste=[];
+  } else {
+    var c=SOL.stock.pop(); c.up=true; SOL.waste.push(c);
+  }
+  SOL.moves++; solRender(); solUpdateStats();
+}
+
+// Can card r2/s2 go on top of r1/s1 in tableau (alternating colour, descending rank)
+function solCanStack(r1,s1,r2,s2){
+  return solRankIdx(r2)===solRankIdx(r1)-1 && solIsRed(s2)!==solIsRed(s1);
+}
+// Can card go to foundation
+function solCanFoundation(card,pile){
+  if(pile.length===0) return card.r==='A';
+  var top=pile[pile.length-1];
+  return card.s===top.s && solRankIdx(card.r)===solRankIdx(top.r)+1;
+}
+
+function solSelect(src,col,idx){
+  // If nothing selected, select this
+  if(!SOL.sel){
+    SOL.sel={src,col,idx}; solRender(); return;
+  }
+  // Clicking same card = deselect
+  if(SOL.sel.src===src&&SOL.sel.col===col&&SOL.sel.idx===idx){
+    SOL.sel=null; solRender(); return;
+  }
+  // Try to move selected to this target
+  var moved=solTryMove(src,col,idx);
+  if(!moved){ SOL.sel={src,col,idx}; }
+  solRender();
+}
+
+function solGetSelectedCards(){
+  var s=SOL.sel;
+  if(s.src==='waste') return [SOL.waste[SOL.waste.length-1]];
+  if(s.src==='foundation') return [SOL.foundations[s.col][SOL.foundations[s.col].length-1]];
+  return SOL.tableau[s.col].slice(s.idx);
+}
+
+function solTryMove(destSrc,destCol,destIdx){
+  if(!SOL.sel) return false;
+  var cards=solGetSelectedCards();
+  if(!cards||!cards.length) return false;
+  var card=cards[0];
+  var selSrc=SOL.sel.src, selCol=SOL.sel.col; // save before removing
+
+  // Moving to foundation
+  if(destSrc==='foundation'){
+    if(cards.length>1) return false;
+    if(!solCanFoundation(card,SOL.foundations[destCol])) return false;
+    solSave();
+    SOL.foundations[destCol].push(card);
+    solRemoveSelected(selSrc,selCol);
+    SOL.moves++; SOL.sel=null;
+    solCheckWin();
+    return true;
+  }
+
+  // Moving to tableau
+  if(destSrc==='tableau'){
+    var pile=SOL.tableau[destCol];
+    var topCard=pile.length?pile[pile.length-1]:null;
+    var ok=false;
+    if(!topCard){ ok=(card.r==='K'); }
+    else if(topCard.up){ ok=solCanStack(topCard.r,topCard.s,card.r,card.s); }
+    if(!ok) return false;
+    solSave();
+    cards.forEach(function(c){ pile.push(c); });
+    solRemoveSelected(selSrc,selCol);
+    // Flip top of source tableau pile
+    if(selSrc==='tableau'){
+      var srcPile=SOL.tableau[selCol];
+      if(srcPile.length&&!srcPile[srcPile.length-1].up) srcPile[srcPile.length-1].up=true;
+    }
+    SOL.moves++; SOL.sel=null;
+    return true;
+  }
+  return false;
+}
+
+function solRemoveSelected(src,col){
+  if(src==='waste') SOL.waste.pop();
+  else if(src==='foundation') SOL.foundations[col].pop();
+  else {
+    var idx=SOL.sel?SOL.sel.idx:SOL.tableau[col].length-1;
+    SOL.tableau[col].splice(idx);
+    var p=SOL.tableau[col];
+    if(p.length&&!p[p.length-1].up) p[p.length-1].up=true;
+  }
+}
+
+function solAutoToFoundation(){
+  // Try to auto-move top waste/tableau cards to foundations
+  var moved=true;
+  while(moved){
+    moved=false;
+    // Check waste top
+    if(SOL.waste.length){
+      var c=SOL.waste[SOL.waste.length-1];
+      for(var f=0;f<4;f++){
+        if(solCanFoundation(c,SOL.foundations[f])){
+          solSave(); SOL.foundations[f].push(c); SOL.waste.pop(); moved=true; SOL.moves++; break;
         }
       }
     }
-    pollsCache = data;
-    renderPolls();
-  } catch(e){
-    var msg = (e && e.message && e.message.includes('relation'))
-      ? 'Tables not set up yet — run the SQL in your Supabase dashboard first.'
-      : 'Could not load predictions.';
-    grid.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>'+msg+'</p></div>';
+    // Check tableau tops
+    for(var col=0;col<7;col++){
+      var p=SOL.tableau[col];
+      if(!p.length) continue;
+      var c=p[p.length-1];
+      if(!c.up) continue;
+      for(var f=0;f<4;f++){
+        if(solCanFoundation(c,SOL.foundations[f])){
+          solSave(); SOL.foundations[f].push(c); p.pop();
+          if(p.length&&!p[p.length-1].up) p[p.length-1].up=true;
+          moved=true; SOL.moves++; break;
+        }
+      }
+    }
+  }
+  solRender(); solUpdateStats(); solCheckWin();
+}
+
+function solCheckWin(){
+  var total=SOL.foundations.reduce((a,b)=>a+b.length,0);
+  if(total===52){
+    clearInterval(SOL.timer); SOL.won=true;
+    var msg=document.getElementById('sol-msg');
+    msg.innerHTML='<div class="sol-win-banner"><h3>You won! 🎉</h3><p style="opacity:0.85">'+
+      SOL.moves+' moves · '+Math.floor(SOL.elapsed/60)+' min '+SOL.elapsed%60+' sec</p></div>';
+    msg.className='game-msg show';
+    document.getElementById('sol-submit-btn').style.display='inline-block';
   }
 }
 
-async function seedPolls(){
-  var rows = SEED_POLLS.map(function(p){
-    return {
-      question: p.question,
-      options: p.options.map(function(o){ return {text:o, votes:0}; })
-    };
-  });
-  await supa.from('polls').insert(rows);
+function solSubmitScore(){
+  var name=prompt('Enter your name for the leaderboard:','');
+  if(!name||!name.trim()) return;
+  document.getElementById('sol-submit-btn').style.display='none';
+  sbSaveScore('solitaire', name.trim(), SOL.moves, {time:SOL.elapsed});
+  setTimeout(solRenderLeaderboard, 500);
 }
 
-function renderPolls(){
-  var grid = document.getElementById('poll-grid');
-  if(!pollsCache.length){ grid.innerHTML='<div class="empty"><p>No predictions yet.</p></div>'; return; }
-  grid.innerHTML = pollsCache.map(function(poll, pi){
-    var opts = poll.options || [];
-    var total = opts.reduce(function(s,o){ return s+(o.votes||0); }, 0);
-    var voted = myVotes[poll.id];
-    var optHtml = opts.map(function(opt, oi){
-      var pct = total > 0 ? Math.round((opt.votes||0)/total*100) : 0;
-      var isSel = voted === oi;
-      var showResults = voted !== undefined;
-      return '<div class="poll-opt'+(isSel?' voted':'')+'" onclick="castVote(\''+poll.id+'\','+oi+')">'+
-        '<div class="bar" style="width:'+(showResults?pct:0)+'%"></div>'+
-        '<div class="label">'+
-          '<span>'+escHtml(opt.text)+(isSel?'<span class="voted-tick"> ✓</span>':'')+'</span>'+
-          (showResults?'<span class="pct">'+pct+'%</span>':'')+
-        '</div></div>';
+function solRenderLeaderboard(){
+  sbGetScores('solitaire',10).then(function(rows){
+    var el=document.getElementById('sol-scores-list');
+    if(!el) return;
+    if(!rows.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — win a game to get on the board!</p>';return;}
+    el.innerHTML=rows.map(function(s,i){
+      var t=s.meta&&s.meta.time?s.meta.time:0;
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+' moves</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+Math.floor(t/60)+':'+(t%60<10?'0':'')+t%60+'</span></div>';
     }).join('');
-    return '<div class="poll-card" id="poll-'+poll.id+'">'+
-      (pi<3?'<div class="poll-pin">📌 Featured prediction</div>':'')+
-      '<div class="poll-q">'+escHtml(poll.question)+'</div>'+
-      '<div class="poll-opts">'+optHtml+'</div>'+
-      (voted!==undefined?'<div class="poll-total">'+total+' vote'+(total!==1?'s':'')+'</div>':
-        '<div class="poll-total" style="font-style:italic">Tap to vote</div>')+
-    '</div>';
-  }).join('');
+  });
 }
 
-async function castVote(pollId, optionIdx){
-  if(myVotes[pollId] !== undefined) return;
-  // Optimistic update
-  myVotes[pollId] = optionIdx;
-  localStorage.setItem('my_votes', JSON.stringify(myVotes));
-  var cached = pollsCache.find(function(p){ return p.id === pollId; });
-  if(cached){
-    cached.options[optionIdx].votes = (cached.options[optionIdx].votes||0) + 1;
-    renderPolls();
+function solMakeCardEl(card,src,col,idx,isTop){
+  var el=document.createElement('div');
+  if(!card.up){el.className='sol-card face-down';return el;}
+  el.className='sol-card '+(solIsRed(card.s)?'red':'black');
+  if(SOL.sel){
+    if(SOL.sel.src===src&&SOL.sel.col===col){
+      if(SOL.sel.idx===idx) el.classList.add('sel');
+      else if(SOL.sel.idx<idx) el.classList.add('sel-group');
+    }
   }
-  // Persist to Supabase — fetch fresh, increment, update
-  try {
-    var {data, error} = await supa.from('polls').select('options').eq('id', pollId).single();
-    if(error) throw error;
-    var opts = JSON.parse(JSON.stringify(data.options)); // deep copy
-    opts[optionIdx].votes = (opts[optionIdx].votes||0) + 1;
-    var {error: updateError} = await supa.from('polls')
-      .update({options: opts})
-      .eq('id', pollId);
-    if(updateError) throw updateError;
-    // Sync cache with server truth
-    if(cached) cached.options = opts;
-    renderPolls();
-  } catch(e){
-    console.warn('Vote save failed:', e);
-    // Revert optimistic update
-    delete myVotes[pollId];
-    localStorage.setItem('my_votes', JSON.stringify(myVotes));
-    if(cached) cached.options[optionIdx].votes = Math.max(0,(cached.options[optionIdx].votes||1)-1);
-    renderPolls();
+  el.innerHTML='<span class="cr">'+card.r+'</span><span class="cs">'+card.s+'</span>'+
+    (isTop?'<span class="cb">'+card.r+'</span><span class="cbs">'+card.s+'</span>':'');
+  (function(s,c,i){ el.addEventListener('click',function(){ solSelect(s,c,i); }); })(src,col,idx);
+  return el;
+}
+
+function solRender(){
+  var CW = window.innerWidth<=500 ? 44 : 72;
+  var CARD_H = CW * 7/5;
+
+  // Stock
+  var stockEl=document.getElementById('sol-stock');
+  stockEl.className='sol-stock'+(SOL.stock.length===0?' empty':'');
+  stockEl.textContent=SOL.stock.length===0?'↺':'🂠';
+  if(SOL.stock.length) stockEl.textContent='';
+
+  // Waste — render top card only, position:relative (CSS handles it)
+  var wasteEl=document.getElementById('sol-waste');
+  wasteEl.innerHTML='';
+  if(SOL.waste.length){
+    var c=SOL.waste[SOL.waste.length-1];
+    var el=solMakeCardEl(c,'waste',0,SOL.waste.length-1,true);
+    el.style.position='relative';
+    if(SOL.sel&&SOL.sel.src==='waste') el.classList.add('sel');
+    wasteEl.appendChild(el);
   }
+
+  // Foundations
+  var fEl=document.getElementById('sol-foundations');
+  fEl.innerHTML='';
+  var suitSymbols=['♠','♥','♦','♣'];
+  SOL.foundations.forEach(function(pile,f){
+    var slot=document.createElement('div');
+    slot.className='sol-foundation-slot';
+    if(pile.length){
+      var c=pile[pile.length-1];
+      var cardEl=solMakeCardEl(c,'foundation',f,pile.length-1,true);
+      cardEl.style.cssText='position:absolute;inset:0;width:100%;height:100%';
+      slot.style.position='relative';
+      slot.appendChild(cardEl);
+    } else {
+      slot.textContent=suitSymbols[f];
+      slot.addEventListener('click',function(){
+        if(SOL.sel){ solTryMove('foundation',f,0); solRender(); }
+      });
+    }
+    fEl.appendChild(slot);
+  });
+
+  // Tableau
+  var tabEl=document.getElementById('sol-tableau');
+  tabEl.innerHTML='';
+  var OFFSET_UP=28, OFFSET_DOWN=16;
+
+  SOL.tableau.forEach(function(pile,col){
+    var pileEl=document.createElement('div');
+    pileEl.className='sol-pile';
+    // Calculate pile height
+    var h=CARD_H;
+    pile.forEach(function(c,idx){
+      if(idx>0) h+=(c.up?OFFSET_UP:OFFSET_DOWN);
+    });
+    pileEl.style.height=Math.max(CARD_H+10,h+10)+'px';
+
+    if(pile.length===0){
+      var empty=document.createElement('div');
+      empty.className='sol-empty';
+      empty.style.position='absolute';
+      empty.style.top='0';
+      (function(col){ empty.addEventListener('click',function(){
+        if(SOL.sel){ solTryMove('tableau',col,0); solRender(); }
+      }); })(col);
+      pileEl.appendChild(empty);
+    }
+
+    var y=0;
+    pile.forEach(function(card,idx){
+      if(idx>0) y+=(card.up?OFFSET_UP:OFFSET_DOWN);
+      var isTop=idx===pile.length-1;
+      var el=solMakeCardEl(card,'tableau',col,idx,isTop);
+      el.style.top=y+'px';
+      el.style.left='0';
+      if(!card.up) el.onclick=null;
+      pileEl.appendChild(el);
+    });
+
+    // Invisible click target at bottom for dropping onto pile
+    var drop=document.createElement('div');
+    drop.style.cssText='position:absolute;bottom:0;left:0;right:0;height:40px;z-index:50;cursor:pointer';
+    (function(col){ drop.addEventListener('click',function(){
+      if(SOL.sel){ solTryMove('tableau',col,pile.length); solRender(); }
+    }); })(col);
+    pileEl.appendChild(drop);
+    tabEl.appendChild(pileEl);
+  });
+
+  solRenderLeaderboard();
 }
 
-// ── UTILS ─────────────────────────────────────────────────
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function showStatus(el, msg, type){
-  el.textContent = msg;
-  el.className = 'status-msg show ' + type;
-  setTimeout(function(){ el.className = 'status-msg'; }, 3500);
-}
-
-// ── REALTIME ──────────────────────────────────────────────
-supa.channel('public:posts').on('postgres_changes',
-  {event:'INSERT', schema:'public', table:'posts'},
-  function(payload){
-    if(postsCache.find(function(p){ return p.id===payload.new.id; })) return;
-    postsCache.unshift(payload.new);
-    if(document.getElementById('panel-messages').classList.contains('active')) renderPosts();
-  }
-).subscribe();
-
-// ── INIT ──────────────────────────────────────────────────
-loadPolls();
-loadPosts();
+// Double-click to auto-send to foundation
+document.addEventListener('dblclick',function(e){
+  var el=e.target.closest('.sol-card');
+  if(!el||!el.dataset) return;
+  // find which card was double-clicked
+  var srcAttr=el.getAttribute('data-sol-src');
+  // We'll handle this via the click system — just trigger auto
+  solAutoToFoundation();
+});
 </script>
-
 <script>
-(function(){
-  var VALID=['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
-  function shellNav(page){
-    if(window.parent!==window){ window.parent.postMessage({nav:page},'*'); }
-    else { window.location.href='/'+page; }
+(function() {
+  var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games'];
+  function shellNav(page) {
+    if (window.parent !== window) {
+      window.parent.postMessage({nav: page}, '*');
+    } else {
+      window.location.href = '/' + page;
+    }
   }
-  window.shellNav=shellNav;
-  document.addEventListener('click',function(e){
-    var a=e.target.closest('a[href]');
-    if(!a) return;
-    var href=a.getAttribute('href')||'';
-    if(!href.startsWith('/')||href.startsWith('//')) return;
-    var page=href.replace(/^\//,'').split('/')[0];
-    if(VALID.indexOf(page)>=0){ e.preventDefault(); e.stopImmediatePropagation(); shellNav(page); }
-  },true);
+  window.shellNav = shellNav;
+  // Capture all internal link clicks and route through shell
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+
+
+
+    var page = href.replace(/^\//, '').split('/')[0];
+    if (VALID.indexOf(page) >= 0) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      shellNav(page);
+    }
+  }, true);
 })();
 </script>
 </body>
