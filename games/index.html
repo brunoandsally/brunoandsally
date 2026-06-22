@@ -1856,8 +1856,135 @@ function solMakeCardEl(card,src,col,idx,isTop){
   }
   el.innerHTML='<span class="cr">'+card.r+'</span><span class="cs">'+card.s+'</span>'+
     (isTop?'<span class="cb">'+card.r+'</span><span class="cbs">'+card.s+'</span>':'');
-  (function(s,c,i){ el.addEventListener('click',function(){ solSelect(s,c,i); }); })(src,col,idx);
+  // Both click (tap) and pointer drag
+  (function(s,c,i){
+    el.addEventListener('click', function(e){
+      if(SOL.drag.active) return; // ignore click at end of drag
+      solSelect(s,c,i);
+    });
+    el.addEventListener('pointerdown', function(e){
+      solDragStart(e,s,c,i);
+    });
+  })(src,col,idx);
   return el;
+}
+
+// ── DRAG ENGINE ──────────────────────────────────────────
+var SOL_DRAG_CSS = false;
+(function(){
+  if(SOL_DRAG_CSS) return; SOL_DRAG_CSS=true;
+  var s=document.createElement('style');
+  s.textContent='.sol-ghost{position:fixed;pointer-events:none;z-index:9999;opacity:0.92;transform-origin:top left;transition:none;box-shadow:0 8px 24px rgba(0,0,0,0.25)}';
+  document.head.appendChild(s);
+})();
+
+SOL.drag={active:false,ghost:null,cards:[],src:null,col:0,idx:0,ox:0,oy:0};
+
+function solDragStart(e,src,col,idx){
+  if(!e.isPrimary) return;
+  var CW=window.innerWidth<=500?44:72;
+  var cards=[];
+  if(src==='waste') cards=[SOL.waste[SOL.waste.length-1]];
+  else if(src==='foundation') cards=[SOL.foundations[col][SOL.foundations[col].length-1]];
+  else cards=SOL.tableau[col].slice(idx);
+  if(!cards.length||!cards[0]||!cards[0].up) return;
+
+  e.preventDefault();
+  e.target.setPointerCapture(e.pointerId);
+
+  // Build ghost — a mini stack of the dragged cards
+  var ghost=document.createElement('div');
+  ghost.className='sol-ghost';
+  ghost.style.width=CW+'px';
+  var OFFSET=window.innerWidth<=500?14:18;
+  cards.forEach(function(c,i){
+    var ce=document.createElement('div');
+    ce.className='sol-card '+(solIsRed(c.s)?'red':'black');
+    ce.style.position='absolute';
+    ce.style.top=(i*OFFSET)+'px';
+    ce.style.left='0';
+    ce.style.width=CW+'px';
+    ce.innerHTML='<span class="cr">'+c.r+'</span><span class="cs">'+c.s+'</span>';
+    ghost.appendChild(ce);
+  });
+  ghost.style.height=(CW*7/5+(cards.length-1)*OFFSET)+'px';
+  document.body.appendChild(ghost);
+
+  var rect=e.target.getBoundingClientRect();
+  SOL.drag={
+    active:false, ghost:ghost, cards:cards,
+    src:src, col:col, idx:idx,
+    ox:e.clientX-rect.left, oy:e.clientY-rect.top,
+    startX:e.clientX, startY:e.clientY
+  };
+  ghost.style.left=(e.clientX-SOL.drag.ox)+'px';
+  ghost.style.top=(e.clientY-SOL.drag.oy)+'px';
+
+  e.target.addEventListener('pointermove', solDragMove);
+  e.target.addEventListener('pointerup', solDragEnd);
+  e.target.addEventListener('pointercancel', solDragCancel);
+}
+
+function solDragMove(e){
+  if(!SOL.drag.ghost) return;
+  var dx=e.clientX-SOL.drag.startX, dy=e.clientY-SOL.drag.startY;
+  if(Math.abs(dx)>4||Math.abs(dy)>4) SOL.drag.active=true;
+  SOL.drag.ghost.style.left=(e.clientX-SOL.drag.ox)+'px';
+  SOL.drag.ghost.style.top=(e.clientY-SOL.drag.oy)+'px';
+}
+
+function solDragEnd(e){
+  e.target.removeEventListener('pointermove', solDragMove);
+  e.target.removeEventListener('pointerup', solDragEnd);
+  e.target.removeEventListener('pointercancel', solDragCancel);
+  if(!SOL.drag.ghost){SOL.drag.active=false;return;}
+  SOL.drag.ghost.remove(); SOL.drag.ghost=null;
+
+  if(!SOL.drag.active){SOL.drag.active=false;return;} // was a tap, handled by click
+
+  // Find drop target under pointer (hide ghost first so elementFromPoint works)
+  var dropEl = document.elementFromPoint(e.clientX, e.clientY);
+  var dropped = false;
+
+  if(dropEl){
+    // Check foundation slots
+    var fSlot = dropEl.closest('.sol-foundation-slot');
+    if(fSlot){
+      var fIdx = Array.from(fSlot.parentElement.children).indexOf(fSlot);
+      SOL.sel={src:SOL.drag.src, col:SOL.drag.col, idx:SOL.drag.idx};
+      dropped = solTryMove('foundation', fIdx, 0);
+    }
+    // Check tableau piles
+    if(!dropped){
+      var pile = dropEl.closest('.sol-pile');
+      if(pile){
+        var pIdx = Array.from(pile.parentElement.children).indexOf(pile);
+        SOL.sel={src:SOL.drag.src, col:SOL.drag.col, idx:SOL.drag.idx};
+        dropped = solTryMove('tableau', pIdx, SOL.tableau[pIdx].length);
+      }
+    }
+    // Check stock/waste area
+    if(!dropped){
+      var wasteArea = dropEl.closest('.sol-waste');
+      if(wasteArea && SOL.drag.src==='tableau'){
+        // Can't drop onto waste
+      }
+    }
+  }
+
+  if(dropped){ SOL.sel=null; SOL.moves++; solCheckWin(); }
+  else { SOL.sel=null; } // failed drop — deselect
+  SOL.drag.active=false;
+  solRender(); solUpdateStats();
+}
+
+function solDragCancel(e){
+  e.target.removeEventListener('pointermove', solDragMove);
+  e.target.removeEventListener('pointerup', solDragEnd);
+  e.target.removeEventListener('pointercancel', solDragCancel);
+  if(SOL.drag.ghost){SOL.drag.ghost.remove(); SOL.drag.ghost=null;}
+  SOL.drag.active=false; SOL.sel=null;
+  solRender();
 }
 
 function solRender(){
