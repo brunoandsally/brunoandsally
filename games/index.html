@@ -7,6 +7,29 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+var SUPA_URL = 'https://zjynlhguilaoxrioysxn.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqeW5saGd1aWxhb3hyaW95c3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTMxMTksImV4cCI6MjA5NzcyOTExOX0.jwjX0wyaGnsns8Gy8q1XF-B7QIIAVKFtrMfl4SAZ1L0';
+var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function sbSaveScore(game, name, score, meta) {
+  try { await supa.from('scores').insert({game, name, score, meta}); }
+  catch(e) { console.warn('Supabase save failed', e); }
+}
+async function sbGetScores(game, limit) {
+  limit = limit || 10;
+  try {
+    var asc = game === 'minesweeper';
+    var {data} = await supa.from('scores')
+      .select('name,score,meta,created_at')
+      .eq('game', game)
+      .order('score', {ascending: asc})
+      .limit(limit);
+    return data || [];
+  } catch(e) { return []; }
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -318,7 +341,7 @@ footer .fn{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:rgba(25
   <div id="sol-leaderboard" style="margin-top:2.5rem">
     <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
     <div id="sol-scores-list"></div>
-    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores saved on this device. Supabase sync coming soon.</p>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
   </div>
 </div>
 
@@ -350,7 +373,7 @@ footer .fn{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:rgba(25
   <div style="margin-top:2.5rem;max-width:500px">
     <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
     <div id="t48-scores-list"></div>
-    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Top scores saved on this device.</p>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
   </div>
 </div>
 
@@ -374,7 +397,7 @@ footer .fn{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:rgba(25
   <div style="margin-top:2.5rem;max-width:500px">
     <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
     <div id="ms-scores-list"></div>
-    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Fastest wins per difficulty, saved on this device.</p>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
   </div>
 </div>
 
@@ -406,7 +429,7 @@ footer .fn{font-family:"Cormorant Garamond",serif;font-size:1.2rem;color:rgba(25
   <div style="margin-top:2.5rem;max-width:500px">
     <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;margin-bottom:1rem">Leaderboard</h3>
     <div id="sn-scores-list"></div>
-    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Top 10 scores saved on this device.</p>
+    <p style="font-size:0.78rem;color:var(--ink-soft);margin-top:0.8rem;font-style:italic">Scores synced live — compete with everyone!</p>
   </div>
 </div>
 
@@ -1070,27 +1093,26 @@ function t48ShowMsg(type){
 }
 
 function t48SaveScore(){
-  var scores=JSON.parse(localStorage.getItem('t48_scores')||'[]');
-  // Find best tile
   var best=0;
   for(var r=0;r<4;r++) for(var c=0;c<4;c++) if(T48.grid[r][c]>best) best=T48.grid[r][c];
   var name=prompt('Enter your name for the leaderboard:','');
   if(!name||!name.trim()) return;
-  scores.push({name:name.trim(),score:T48.score,best:best,date:new Date().toLocaleDateString('en-GB')});
-  scores.sort(function(a,b){return b.score-a.score;});
-  scores=scores.slice(0,10);
-  localStorage.setItem('t48_scores',JSON.stringify(scores));
-  t48RenderLeaderboard();
+  sbSaveScore('2048', name.trim(), T48.score, {best_tile:best});
+  setTimeout(t48RenderLeaderboard, 500);
 }
 
 function t48RenderLeaderboard(){
-  var scores=JSON.parse(localStorage.getItem('t48_scores')||'[]');
-  var el=document.getElementById('t48-scores-list');
-  if(!el) return;
-  if(!scores.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — play to get on the board!</p>';return;}
-  el.innerHTML=scores.map(function(s,i){
-    return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span><span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span><span style="color:var(--warm);font-size:0.82rem;font-weight:600">'+s.best+'</span></div>';
-  }).join('');
+  sbGetScores('2048',10).then(function(rows){
+    var el=document.getElementById('t48-scores-list');
+    if(!el) return;
+    if(!rows.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — play to get on the board!</p>';return;}
+    el.innerHTML=rows.map(function(s,i){
+      var best=s.meta&&s.meta.best_tile?s.meta.best_tile:'';
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span>'+
+        '<span style="color:var(--warm);font-size:0.82rem;font-weight:600">'+best+'</span></div>';
+    }).join('');
+  });
 }
 
 // Keyboard
@@ -1249,29 +1271,27 @@ function snDie(){
 
 function snSaveScore(){
   if(SN.score === 0) return;
-  var scores = JSON.parse(localStorage.getItem('sn_scores')||'[]');
   var name = prompt('Enter your name for the leaderboard:','');
   if(!name||!name.trim()) return;
-  scores.push({name:name.trim(), score:SN.score, level:SN.level, date:new Date().toLocaleDateString('en-GB')});
-  scores.sort(function(a,b){return b.score-a.score;});
-  scores = scores.slice(0,10);
-  localStorage.setItem('sn_scores', JSON.stringify(scores));
-  snRenderLeaderboard();
+  sbSaveScore('snake', name.trim(), SN.score, {level:SN.level});
+  setTimeout(snRenderLeaderboard, 500);
 }
 
 function snRenderLeaderboard(){
   var el = document.getElementById('sn-scores-list');
   if(!el) return;
-  var scores = JSON.parse(localStorage.getItem('sn_scores')||'[]');
-  if(!scores.length){
-    el.innerHTML = '<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — start munching!</p>';
-    return;
-  }
-  el.innerHTML = scores.map(function(s,i){
-    return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>' +
-      '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span>' +
-      '<span style="color:var(--warm);font-size:0.78rem;font-weight:600">Lv '+s.level+'</span></div>';
-  }).join('');
+  sbGetScores('snake',10).then(function(rows){
+    if(!rows.length){
+      el.innerHTML = '<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — start munching!</p>';
+      return;
+    }
+    el.innerHTML = rows.map(function(s,i){
+      var lv = s.meta&&s.meta.level?s.meta.level:1;
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>' +
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'</span>' +
+        '<span style="color:var(--warm);font-size:0.78rem;font-weight:600">Lv '+lv+'</span></div>';
+    }).join('');
+  });
 }
 
 function snDraw(){
@@ -1524,30 +1544,35 @@ function msCheckWin(){
 function msSaveScore(){
   var name=prompt('Enter your name for the leaderboard:','');
   if(!name||!name.trim()) return;
-  var key='ms_scores_'+MS.difficulty;
-  var scores=JSON.parse(localStorage.getItem(key)||'[]');
-  scores.push({name:name.trim(),time:MS.elapsed,date:new Date().toLocaleDateString('en-GB')});
-  scores.sort(function(a,b){return a.time-b.time;});
-  scores=scores.slice(0,5);
-  localStorage.setItem(key,JSON.stringify(scores));
-  msRenderLeaderboard();
+  // Score = negative time so lower time = higher score in our shared table
+  sbSaveScore('minesweeper', name.trim(), MS.elapsed, {difficulty:MS.difficulty});
+  setTimeout(msRenderLeaderboard, 500);
 }
 
 function msRenderLeaderboard(){
   var el=document.getElementById('ms-scores-list');
   if(!el) return;
-  var diffs=['easy','medium','hard'];
   var labels={easy:'Easy (9×9)',medium:'Medium (16×16)',hard:'Hard (16×30)'};
-  var html='';
-  diffs.forEach(function(d){
-    var scores=JSON.parse(localStorage.getItem('ms_scores_'+d)||'[]');
-    if(!scores.length) return;
-    html+='<p style="font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--warm);margin:1rem 0 0.4rem">'+labels[d]+'</p>';
-    scores.forEach(function(s,i){
-      html+='<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span><span style="color:var(--ink-soft);font-size:0.82rem">'+s.time+'s</span><span style="color:var(--ink-soft);font-size:0.78rem">'+s.date+'</span></div>';
+  var diffs=['easy','medium','hard'];
+  // Fetch all minesweeper scores, then group by difficulty client-side
+  sbGetScores('minesweeper',50).then(function(rows){
+    var grouped={easy:[],medium:[],hard:[]};
+    rows.forEach(function(r){
+      var d=r.meta&&r.meta.difficulty?r.meta.difficulty:'easy';
+      if(grouped[d]) grouped[d].push(r);
     });
+    var html='';
+    diffs.forEach(function(d){
+      var list=grouped[d].sort(function(a,b){return a.score-b.score;}).slice(0,5);
+      if(!list.length) return;
+      html+='<p style="font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--warm);margin:1rem 0 0.4rem">'+labels[d]+'</p>';
+      list.forEach(function(s,i){
+        html+='<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+          '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+'s</span></div>';
+      });
+    });
+    el.innerHTML=html||'<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No wins yet — good luck!</p>';
   });
-  el.innerHTML=html||'<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No wins yet — good luck!</p>';
 }
 
 function msRender(){
@@ -1800,26 +1825,23 @@ function solCheckWin(){
 function solSubmitScore(){
   var name=prompt('Enter your name for the leaderboard:','');
   if(!name||!name.trim()) return;
-  var scores=JSON.parse(localStorage.getItem('sol_scores')||'[]');
-  scores.push({name:name.trim(),moves:SOL.moves,time:SOL.elapsed,date:new Date().toLocaleDateString('en-GB')});
-  scores.sort((a,b)=>a.moves-b.moves||(a.time-b.time));
-  scores=scores.slice(0,10);
-  localStorage.setItem('sol_scores',JSON.stringify(scores));
   document.getElementById('sol-submit-btn').style.display='none';
-  solRenderLeaderboard();
+  sbSaveScore('solitaire', name.trim(), SOL.moves, {time:SOL.elapsed});
+  setTimeout(solRenderLeaderboard, 500);
 }
 
 function solRenderLeaderboard(){
-  var scores=JSON.parse(localStorage.getItem('sol_scores')||'[]');
-  var el=document.getElementById('sol-scores-list');
-  if(!scores.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — win a game to get on the board!</p>';return;}
-  el.innerHTML=scores.map((s,i)=>`
-    <div class="sol-score-row">
-      <span class="sol-score-rank">${i+1}</span>
-      <span>${s.name}</span>
-      <span style="color:var(--ink-soft);font-size:0.82rem">${s.moves} moves</span>
-      <span style="color:var(--ink-soft);font-size:0.82rem">${Math.floor(s.time/60)}:${String(s.time%60).padStart(2,'0')}</span>
-    </div>`).join('');
+  sbGetScores('solitaire',10).then(function(rows){
+    var el=document.getElementById('sol-scores-list');
+    if(!el) return;
+    if(!rows.length){el.innerHTML='<p style="color:var(--ink-soft);font-size:0.88rem;font-style:italic">No scores yet — win a game to get on the board!</p>';return;}
+    el.innerHTML=rows.map(function(s,i){
+      var t=s.meta&&s.meta.time?s.meta.time:0;
+      return '<div class="sol-score-row"><span class="sol-score-rank">'+(i+1)+'</span><span>'+s.name+'</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+s.score+' moves</span>'+
+        '<span style="color:var(--ink-soft);font-size:0.82rem">'+Math.floor(t/60)+':'+(t%60<10?'0':'')+t%60+'</span></div>';
+    }).join('');
+  });
 }
 
 function solMakeCardEl(card,src,col,idx,isTop){

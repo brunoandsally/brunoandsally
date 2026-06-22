@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bruno & Sally — The Board</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sage:#5C7A5C;--sage-light:#8FA882;--sage-pale:#EEF2E8;
+  --sky:#4A7FA8;--sky-light:#7BAFD4;
+  --cream:#FAF8F3;--stone:#F0EBE1;
+  --ink:#2C2C2A;--ink-soft:#5C5A56;
+  --warm:#C4894A;--warm-light:#E8C49A;
+  --white:#fff;--line:rgba(44,44,42,0.1);
+}
+html{scroll-behavior:smooth}
+body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;min-height:100vh}
+.hero{background:var(--ink);color:#fff;padding:3.5rem 2rem 2.5rem;text-align:center}
+.hero .eyebrow{font-size:0.7rem;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;color:var(--warm-light);margin-bottom:0.8rem}
+.hero h1{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:300;line-height:1;margin-bottom:0.5rem}
+.hero p{color:rgba(255,255,255,0.5);font-size:0.9rem;max-width:42ch;margin:0 auto}
+.tabs{display:flex;justify-content:center;background:var(--stone);border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-btn{padding:1rem 1.4rem;background:none;border:none;border-bottom:2px solid transparent;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all 0.2s}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--sage);border-bottom-color:var(--sage)}
+.panel{display:none;padding:2.5rem 1.5rem;max-width:740px;margin:0 auto}
+.panel.active{display:block}
+
+/* ── PREDICTIONS ── */
+.poll-grid{display:flex;flex-direction:column;gap:1.5rem}
+.poll-card{background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.5rem;position:relative}
+.poll-card.pinned{border-left:3px solid var(--warm)}
+.poll-pin{font-size:0.65rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--warm);margin-bottom:0.6rem}
+.poll-q{font-family:"Cormorant Garamond",serif;font-size:1.25rem;font-weight:400;margin-bottom:1rem;line-height:1.3}
+.poll-opts{display:flex;flex-direction:column;gap:0.5rem}
+.poll-opt{position:relative;border:1.5px solid var(--line);border-radius:3px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;background:#fff}
+.poll-opt:hover{border-color:var(--sage-light)}
+.poll-opt.voted{border-color:var(--sage);cursor:default}
+.poll-opt .bar{position:absolute;inset:0;background:var(--sage-pale);transform-origin:left;transition:width 0.4s ease}
+.poll-opt .label{position:relative;padding:0.6rem 0.9rem;font-size:0.88rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
+.poll-opt .pct{font-weight:600;font-size:0.8rem;color:var(--sage);min-width:2.5rem;text-align:right}
+.poll-total{font-size:0.75rem;color:var(--ink-soft);margin-top:0.6rem}
+
+/* ── MESSAGE BOARD ── */
+.compose{background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.5rem;margin-bottom:2rem}
+.compose h3{font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-weight:400;margin-bottom:1rem}
+.compose-row{display:flex;gap:0.7rem;margin-bottom:0.7rem;flex-wrap:wrap}
+.compose input[type=text],.compose textarea{font-family:"Jost",sans-serif;font-size:0.9rem;border:1.5px solid var(--line);border-radius:2px;padding:0.6rem 0.8rem;background:#fff;color:var(--ink);width:100%;transition:border-color 0.15s;resize:vertical}
+.compose input[type=text]:focus,.compose textarea:focus{outline:none;border-color:var(--sage-light)}
+.compose input.name-field{width:auto;flex:1;min-width:120px}
+.emoji-picker{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.8rem}
+.emoji-btn{width:36px;height:36px;border:1.5px solid var(--line);border-radius:4px;background:#fff;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.emoji-btn:hover,.emoji-btn.sel{border-color:var(--sage);background:var(--sage-pale)}
+.posts-list{display:flex;flex-direction:column;gap:1rem}
+.post-card{background:#fff;border:1px solid var(--line);border-radius:4px;padding:1.2rem 1.4rem;display:flex;gap:1rem;align-items:flex-start}
+.post-avatar{width:38px;height:38px;border-radius:50%;background:var(--sage-pale);border:1.5px solid var(--sage-light);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.post-body{flex:1;min-width:0}
+.post-meta{display:flex;gap:0.6rem;align-items:baseline;margin-bottom:0.3rem;flex-wrap:wrap}
+.post-name{font-weight:600;font-size:0.88rem}
+.post-time{font-size:0.75rem;color:var(--ink-soft)}
+.post-text{font-size:0.92rem;line-height:1.5;word-break:break-word}
+.post-reactions{display:flex;gap:0.5rem;margin-top:0.6rem;flex-wrap:wrap}
+.react-btn{border:1px solid var(--line);border-radius:20px;padding:0.2rem 0.6rem;font-size:0.8rem;cursor:pointer;background:#fff;color:var(--ink);transition:all 0.15s;display:flex;align-items:center;gap:0.25rem}
+.react-btn:hover{border-color:var(--warm-light);background:var(--stone)}
+.react-btn.reacted{background:var(--warm-light);border-color:var(--warm)}
+.loading{text-align:center;padding:2rem;color:var(--ink-soft);font-size:0.9rem;font-style:italic}
+.empty{text-align:center;padding:3rem 1rem;color:var(--ink-soft);font-size:0.9rem}
+.btn{display:inline-flex;align-items:center;gap:0.4rem;padding:0.65rem 1.4rem;border-radius:1px;font-size:0.72rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;border:none;font-family:"Jost",sans-serif;transition:all 0.2s}
+.btn-sage{background:var(--sage);color:#fff}.btn-sage:hover{background:var(--sage-light)}
+.btn-outline{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}.btn-outline:hover{background:var(--ink);color:#fff}
+.status-msg{padding:0.7rem 1rem;border-radius:2px;font-size:0.85rem;margin-top:0.8rem;display:none}
+.status-msg.show{display:block}
+.status-msg.ok{background:var(--sage-pale);color:var(--sage);border:1px solid var(--sage-light)}
+.status-msg.err{background:#fdf0e8;color:#a85a20;border:1px solid var(--warm-light)}
+footer{text-align:center;padding:2.5rem 1rem;font-size:0.8rem;color:var(--ink-soft);border-top:1px solid var(--line);margin-top:3rem}
+.fn{font-family:"Cormorant Garamond",serif;font-size:1rem;font-weight:400;margin-bottom:0.2rem;color:var(--ink)}
+@media(max-width:500px){.panel{padding:1.5rem 1rem}.post-card{padding:1rem}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <p class="eyebrow">Bruno &amp; Sally · 20 September 2027</p>
+  <h1>The Board</h1>
+  <p>Predictions, messages, and general chaos from the wedding guests.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('predictions',this)">Predictions</button>
+  <button class="tab-btn" onclick="switchTab('messages',this)">Messages</button>
+</div>
+
+<!-- ══ PREDICTIONS ══ -->
+<div class="panel active" id="panel-predictions">
+  <p style="color:var(--ink-soft);font-size:0.88rem;margin-bottom:1.5rem">Vote on what will happen. Results are live.</p>
+  <div class="poll-grid" id="poll-grid">
+    <div class="loading">Loading predictions…</div>
+  </div>
+</div>
+
+<!-- ══ MESSAGES ══ -->
+<div class="panel" id="panel-messages">
+
+  <div class="compose">
+    <h3>Leave a message</h3>
+    <div class="compose-row">
+      <input type="text" class="name-field" id="msg-name" placeholder="Your name" maxlength="40"/>
+    </div>
+    <div class="emoji-picker" id="emoji-picker"></div>
+    <textarea id="msg-text" rows="3" placeholder="Say something lovely (or funny)…" maxlength="500"></textarea>
+    <div style="margin-top:0.8rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
+      <button class="btn btn-sage" onclick="submitPost()">Post message</button>
+      <span id="msg-status" class="status-msg"></span>
+    </div>
+  </div>
+
+  <div class="posts-list" id="posts-list">
+    <div class="loading">Loading messages…</div>
+  </div>
+</div>
+
+<footer>
+  <p class="fn">Bruno &amp; Sally</p>
+  <p>20 September 2027 · Holy Cross Church, Newton Ferrers</p>
+</footer>
+
+<script>
+var SUPA_URL = 'https://zjynlhguilaoxrioysxn.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqeW5saGd1aWxhb3hyaW95c3huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTMxMTksImV4cCI6MjA5NzcyOTExOX0.jwjX0wyaGnsns8Gy8q1XF-B7QIIAVKFtrMfl4SAZ1L0';
+var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Voter ID — random per device, stored in localStorage
+var VOTER_ID = localStorage.getItem('voter_id') || (function(){
+  var id = Math.random().toString(36).slice(2)+Date.now().toString(36);
+  localStorage.setItem('voter_id', id); return id;
+})();
+
+// ── TAB SWITCHING ──────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('panel-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ── EMOJI PICKER ───────────────────────────────────────────
+var EMOJIS = ['😊','😂','🥂','💒','💐','🌊','🎉','❤️','🦞','🥳','😭','🕺'];
+var selectedEmoji = '😊';
+(function(){
+  var picker = document.getElementById('emoji-picker');
+  EMOJIS.forEach(function(e){
+    var btn = document.createElement('button');
+    btn.className = 'emoji-btn' + (e===selectedEmoji?' sel':'');
+    btn.textContent = e;
+    btn.onclick = function(){
+      selectedEmoji = e;
+      picker.querySelectorAll('.emoji-btn').forEach(function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+    };
+    picker.appendChild(btn);
+  });
+})();
+
+// ── POSTS ─────────────────────────────────────────────────
+var postsCache = [];
+
+function timeAgo(iso) {
+  var diff = (Date.now() - new Date(iso)) / 1000;
+  if(diff < 60) return 'just now';
+  if(diff < 3600) return Math.floor(diff/60)+'m ago';
+  if(diff < 86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+async function loadPosts() {
+  var list = document.getElementById('posts-list');
+  try {
+    var {data, error} = await supa.from('posts')
+      .select('*')
+      .order('created_at', {ascending:false})
+      .limit(100);
+    if(error) throw error;
+    postsCache = data || [];
+    renderPosts();
+  } catch(e) {
+    list.innerHTML = '<div class="empty">Could not load messages.</div>';
+  }
+}
+
+function renderPosts() {
+  var list = document.getElementById('posts-list');
+  if(!postsCache.length){
+    list.innerHTML = '<div class="empty">No messages yet — be the first!</div>';
+    return;
+  }
+  list.innerHTML = postsCache.map(function(p){
+    var reactions = p.reactions || {};
+    var reacted = JSON.parse(localStorage.getItem('reacted_'+p.id)||'{}');
+    var reactionBtns = ['❤️','😂','🥂'].map(function(r){
+      var count = reactions[r] || 0;
+      var cls = reacted[r] ? ' reacted' : '';
+      return '<button class="react-btn'+cls+'" onclick="reactToPost(\''+p.id+'\',\''+r+'\')">'+r+(count?' '+count:'')+'</button>';
+    }).join('');
+    return '<div class="post-card" id="post-'+p.id+'">' +
+      '<div class="post-avatar">'+p.emoji+'</div>' +
+      '<div class="post-body">' +
+        '<div class="post-meta"><span class="post-name">'+escHtml(p.name)+'</span><span class="post-time">'+timeAgo(p.created_at)+'</span></div>' +
+        '<div class="post-text">'+escHtml(p.message)+'</div>' +
+        '<div class="post-reactions">'+reactionBtns+'</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function submitPost() {
+  var name = document.getElementById('msg-name').value.trim();
+  var message = document.getElementById('msg-text').value.trim();
+  var status = document.getElementById('msg-status');
+  if(!name){ showStatus(status,'Please enter your name.','err'); return; }
+  if(!message){ showStatus(status,'Please write something!','err'); return; }
+  if(message.length > 500){ showStatus(status,'Too long — 500 chars max.','err'); return; }
+  try {
+    var {error} = await supa.from('posts').insert({name, message, emoji:selectedEmoji, reactions:{}});
+    if(error) throw error;
+    document.getElementById('msg-text').value = '';
+    showStatus(status,'Posted! 🎉','ok');
+    loadPosts();
+  } catch(e) {
+    showStatus(status,'Could not post — try again.','err');
+  }
+}
+
+async function reactToPost(postId, reaction) {
+  var reacted = JSON.parse(localStorage.getItem('reacted_'+postId)||'{}');
+  if(reacted[reaction]) return; // already reacted
+  try {
+    // Fetch current reactions
+    var {data} = await supa.from('posts').select('reactions').eq('id',postId).single();
+    var reactions = (data && data.reactions) || {};
+    reactions[reaction] = (reactions[reaction]||0) + 1;
+    await supa.from('posts').update({reactions}).eq('id',postId);
+    reacted[reaction] = true;
+    localStorage.setItem('reacted_'+postId, JSON.stringify(reacted));
+    loadPosts();
+  } catch(e) {}
+}
+
+// ── POLLS ─────────────────────────────────────────────────
+var pollsCache = [];
+var myVotes = JSON.parse(localStorage.getItem('my_votes')||'{}');
+
+// Pinned default predictions (seeded once if polls table is empty)
+var SEED_POLLS = [
+  {question:'Who cries first?', options:['Bruno','Sally','Father of the bride','An unexpected guest']},
+  {question:'What time does Bruno fall asleep at the after-party?', options:['Before midnight','12–1am','1–2am','Still going at 3am']},
+  {question:'Weather on the day?', options:['Full Devon sunshine ☀️','Light drizzle 🌦️','Full monsoon 🌧️','All three in one day']},
+  {question:'How many Aperol Spritzes get consumed?', options:['Under 50','50–100','100–200','Lost count after 100']},
+  {question:'Will the hog roast run out?', options:['Yes — chaos ensues','No — plenty for all','There are leftovers','What hog roast?']},
+  {question:'Who gives the most chaotic speech?', options:['Best man Jamie','Father of the bride','Bruno','Sally']},
+  {question:"What is Bruno's first dance move?", options:['Dignified and smooth','Enthusiastic but risky','Full dad-dance energy','Refuses to move at all']},
+  {question:'Does anyone get lost on the way to Newton Ferrers?', options:['At least 3 cars','Just one — and they know who','Nobody — Google Maps saves the day','Everyone arrives somehow']},
+];
+
+async function loadPolls() {
+  var grid = document.getElementById('poll-grid');
+  try {
+    var {data, error} = await supa.from('polls').select('*').order('created_at', {ascending:true});
+    if(error) throw error;
+    // Seed if empty
+    if(!data || data.length === 0) {
+      await seedPolls();
+      var {data:fresh} = await supa.from('polls').select('*').order('created_at',{ascending:true});
+      data = fresh || [];
+    }
+    pollsCache = data;
+    renderPolls();
+  } catch(e) {
+    grid.innerHTML = '<div class="empty">Could not load predictions.</div>';
+  }
+}
+
+async function seedPolls() {
+  var rows = SEED_POLLS.map(function(p){
+    return { question:p.question, options: p.options.map(function(o){ return {text:o, votes:0}; }) };
+  });
+  await supa.from('polls').insert(rows);
+}
+
+function renderPolls() {
+  var grid = document.getElementById('poll-grid');
+  if(!pollsCache.length){ grid.innerHTML='<div class="empty">No predictions yet.</div>'; return; }
+  grid.innerHTML = pollsCache.map(function(poll, pi){
+    var opts = poll.options || [];
+    var total = opts.reduce(function(a,o){ return a+(o.votes||0); }, 0);
+    var voted = myVotes[poll.id];
+    var optHtml = opts.map(function(opt, oi){
+      var pct = total ? Math.round((opt.votes||0)/total*100) : 0;
+      var isSel = voted===oi;
+      return '<div class="poll-opt'+(isSel?' voted':'')+'" onclick="vote(\''+poll.id+'\','+oi+')">' +
+        '<div class="bar" style="width:'+(voted!==undefined?pct:0)+'%"></div>' +
+        '<div class="label"><span>'+escHtml(opt.text)+(isSel?' ✓':'')+'</span>' +
+        (voted!==undefined?'<span class="pct">'+pct+'%</span>':'')+
+        '</div></div>';
+    }).join('');
+    return '<div class="poll-card'+(pi<3?' pinned':'')+'" id="poll-'+poll.id+'">' +
+      (pi<3?'<div class="poll-pin">📌 Featured</div>':'')+
+      '<div class="poll-q">'+escHtml(poll.question)+'</div>' +
+      '<div class="poll-opts">'+optHtml+'</div>' +
+      (voted!==undefined?'<div class="poll-total">'+total+' vote'+(total!==1?'s':'')+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+
+async function vote(pollId, optionIdx) {
+  if(myVotes[pollId] !== undefined) return; // already voted
+  try {
+    var {data} = await supa.from('polls').select('options').eq('id',pollId).single();
+    var opts = data.options;
+    opts[optionIdx].votes = (opts[optionIdx].votes||0) + 1;
+    var {error} = await supa.from('polls').update({options:opts}).eq('id',pollId);
+    if(error) throw error;
+    myVotes[pollId] = optionIdx;
+    localStorage.setItem('my_votes', JSON.stringify(myVotes));
+    // Update cache
+    var p = pollsCache.find(function(p){ return p.id===pollId; });
+    if(p) p.options = opts;
+    renderPolls();
+  } catch(e) { console.warn('vote failed',e); }
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = 'status-msg show '+type;
+  setTimeout(function(){ el.className='status-msg'; }, 3500);
+}
+
+// ── REALTIME ──────────────────────────────────────────────
+// Subscribe to new posts
+supa.channel('posts').on('postgres_changes',
+  {event:'INSERT', schema:'public', table:'posts'},
+  function(payload){
+    postsCache.unshift(payload.new);
+    if(document.getElementById('panel-messages').classList.contains('active')) renderPosts();
+  }
+).subscribe();
+
+// ── INIT ──────────────────────────────────────────────────
+loadPolls();
+loadPosts();
+</script>
+
+<script>
+// Shell redirect
+(function() {
+  var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
+  function shellNav(page) {
+    if (window.parent !== window) {
+      window.parent.postMessage({nav: page}, '*');
+    } else { window.location.href = '/'+page; }
+  }
+  window.shellNav = shellNav;
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (!href.startsWith('/') || href.startsWith('//')) return;
+    var page = href.replace(/^\//, '').split('/')[0];
+    if (VALID.indexOf(page) >= 0) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      shellNav(page);
+    }
+  }, true);
+})();
+</script>
+</body>
+</html>
