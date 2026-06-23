@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Bruno &amp; Sally — 20th September 2027</title>
-<meta name="description" content="Bruno &amp; Sally are getting married in Devon, 20th September 2027."/>
+<title>Bruno &amp; Sally — 18th September 2027</title>
+<meta name="description" content="Bruno &amp; Sally are getting married in Devon, 18th September 2027."/>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -277,7 +277,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
     </svg>
   </div>
   <h1 class="gate-title">Bruno <span>&amp;</span> Sally</h1>
-  <p class="gate-sub">20th September 2027 &middot; Newton Ferrers, Devon</p>
+  <p class="gate-sub">18th September 2027 &middot; Newton Ferrers, Devon</p>
 
   <!-- Screen A: lookup -->
   <div id="screen-lookup">
@@ -321,13 +321,13 @@ body{display:flex;flex-direction:column;background:var(--cream)}
     <ul class="nav-links" id="desktopNav">
       <li></li>
       <li><a onclick="nav('the-day');return false" href="/the-day" data-page="the-day">The Day</a></li>
-      <li><a onclick="nav('our-story');return false" href="/our-story" data-page="our-story">Our Story</a></li>
-      <li><a onclick="nav('rsvp');return false" href="/rsvp" data-page="rsvp">RSVP</a></li>
-      <li><a onclick="nav('faq');return false" href="/faq" data-page="faq">FAQ</a></li>
-      <li><a onclick="nav('wedding-party');return false" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
       <li><a onclick="nav('day-after');return false" href="/day-after" data-page="day-after">Sunday 19th</a></li>
-      <li><a onclick="nav('games');return false" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
+      <li><a onclick="nav('rsvp');return false" href="/rsvp" data-page="rsvp">RSVP</a></li>
+      <li><a onclick="nav('wedding-party');return false" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
+      <li><a onclick="nav('our-story');return false" href="/our-story" data-page="our-story">Our Story</a></li>
+      <li><a onclick="nav('faq');return false" href="/faq" data-page="faq">FAQ</a></li>
       <li><a onclick="nav('community');return false" href="/community" data-page="community" class="games-link">The Board 💬</a></li>
+      <li><a onclick="nav('games');return false" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
     </ul>
     <button class="nav-burger" onclick="toggleDrawer()" aria-label="Menu">&#9776;</button>
   </div>
@@ -336,13 +336,13 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 <!-- MOBILE DRAWER -->
 <nav class="nav-drawer" id="drawer">
   <a onclick="nav('the-day');closeDrawer();return false" href="/the-day">The Day</a>
-  <a onclick="nav('our-story');closeDrawer();return false" href="/our-story">Our Story</a>
-  <a onclick="nav('rsvp');closeDrawer();return false" href="/rsvp">RSVP</a>
-  <a onclick="nav('faq');closeDrawer();return false" href="/faq">FAQ</a>
-  <a onclick="nav('wedding-party');closeDrawer();return false" href="/wedding-party">Wedding Party</a>
   <a onclick="nav('day-after');closeDrawer();return false" href="/day-after">Sunday 19th</a>
-  <a onclick="nav('games');closeDrawer();return false" href="/games" style="color:var(--warm-light)">Games 🎮</a>
+  <a onclick="nav('rsvp');closeDrawer();return false" href="/rsvp">RSVP</a>
+  <a onclick="nav('wedding-party');closeDrawer();return false" href="/wedding-party">Wedding Party</a>
+  <a onclick="nav('our-story');closeDrawer();return false" href="/our-story">Our Story</a>
+  <a onclick="nav('faq');closeDrawer();return false" href="/faq">FAQ</a>
   <a onclick="nav('community');closeDrawer();return false" href="/community" style="color:var(--warm-light)">The Board 💬</a>
+  <a onclick="nav('games');closeDrawer();return false" href="/games" style="color:var(--warm-light)">Games 🎮</a>
 </nav>
 
 <!-- PAGE LOADER BAR -->
