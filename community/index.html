@@ -763,14 +763,31 @@ function showStatus(el, msg, type){
 }
 
 // ── REALTIME ───────────────────────────────────────────────
-supa.channel('public:posts').on('postgres_changes',
-  {event:'INSERT', schema:'public', table:'posts'},
-  function(payload){
-    if(postsCache.find(function(p){ return p.id===payload.new.id; })) return;
-    if(!payload.new.reply_to) postsCache.unshift(payload.new);
-    if(document.getElementById('panel-messages').classList.contains('active')) renderPosts();
+// Subscribe to INSERT and UPDATE on posts table
+// Requires Realtime enabled on the posts table in Supabase dashboard:
+// Database → Replication → supabase_realtime publication → add 'posts' table
+supa.channel('community-posts')
+  .on('postgres_changes', {event:'INSERT', schema:'public', table:'posts'}, function(payload){
+    // New post or reply — just reload to get full data inc. threading
+    loadPosts();
+  })
+  .on('postgres_changes', {event:'UPDATE', schema:'public', table:'posts'}, function(payload){
+    // Reaction update — reload posts
+    loadPosts();
+  })
+  .subscribe(function(status){
+    console.log('Realtime status:', status);
+    if(status === 'SUBSCRIBED'){
+      console.log('Realtime connected — live updates active');
+    }
+  });
+
+// Fallback: poll every 20s in case realtime isn't available
+setInterval(function(){
+  if(document.getElementById('panel-messages').classList.contains('active')){
+    loadPosts();
   }
-).subscribe();
+}, 20000);
 
 // ── INIT ───────────────────────────────────────────────────
 // Wire up picker buttons via addEventListener (more reliable than inline onclick in iframes)
