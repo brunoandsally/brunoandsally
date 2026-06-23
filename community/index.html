@@ -214,7 +214,7 @@ footer{text-align:center;padding:2rem 1rem;font-size:0.78rem;color:var(--ink-sof
       <div id="gif-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;max-height:260px;overflow-y:auto">
         <p style="grid-column:1/-1;text-align:center;font-size:0.82rem;color:var(--ink-soft);font-style:italic;padding:1rem 0">Search for a GIF above</p>
       </div>
-      <p style="font-size:0.62rem;color:var(--ink-soft);margin-top:0.4rem;text-align:right">Powered by Tenor</p>
+      <p style="font-size:0.62rem;color:var(--ink-soft);margin-top:0.4rem;text-align:right">Powered by GIPHY</p>
     </div>
 
     <div class="msg-area-wrap">
@@ -338,20 +338,20 @@ function togglePicker(which){
 // Kept for backward compat (reply boxes call this)
 function toggleEmojiDrawer(forceClose){ if(forceClose===false) togglePicker(currentPicker||'emoji'); }
 
-// ── GIF PICKER ─────────────────────────────────────────────
-var GIF_KEY = 'AIzaSyAyimkuYQYF_FXVALexPko2zsEGlOGFsMA'; // Tenor public demo key
+// ── GIF PICKER (Giphy) ────────────────────────────────────
+var GIPHY_KEY = 'O1tVFkT1q2a6bNQqCJ8UdXxCdEalnZBe';
 var gifTimer = null;
-var pendingGifUrl = null; // GIF chosen but not yet in message
+var pendingGifUrl = null;
 
 function loadTrendingGifs(){
-  fetchGifs('https://tenor.googleapis.com/v2/featured?key='+GIF_KEY+'&limit=12&media_filter=gif');
+  fetchGifs('https://api.giphy.com/v1/gifs/trending?api_key='+GIPHY_KEY+'&limit=15&rating=g');
 }
 
 function searchGifs(query){
   clearTimeout(gifTimer);
   if(!query.trim()){ loadTrendingGifs(); return; }
   gifTimer = setTimeout(function(){
-    fetchGifs('https://tenor.googleapis.com/v2/search?key='+GIF_KEY+'&q='+encodeURIComponent(query)+'&limit=12&media_filter=gif');
+    fetchGifs('https://api.giphy.com/v1/gifs/search?api_key='+GIPHY_KEY+'&q='+encodeURIComponent(query)+'&limit=15&rating=g');
   }, 400);
 }
 
@@ -363,405 +363,37 @@ function fetchGifs(url){
     .then(function(r){ return r.json(); })
     .then(function(data){
       grid.innerHTML = '';
-      (data.results||[]).forEach(function(gif){
-        var url = gif.media_formats&&gif.media_formats.gif ? gif.media_formats.gif.url : null;
-        var preview = gif.media_formats&&gif.media_formats.tinygif ? gif.media_formats.tinygif.url : url;
-        if(!url) return;
+      (data.data||[]).forEach(function(gif){
+        var images = gif.images||{};
+        var preview = images.fixed_height_small||images.fixed_height||{};
+        var full    = images.fixed_height||images.original||{};
+        var previewUrl = preview.url||null;
+        var fullUrl    = full.url||previewUrl;
+        if(!previewUrl) return;
         var img = document.createElement('img');
-        img.src = preview;
-        img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:border-color 0.1s';
-        img.title = gif.title||'';
-        img.onclick = function(){
-          // Mark selected
+        img.src = previewUrl;
+        img.style.cssText = 'width:100%;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:border-color 0.12s;display:block';
+        img.loading = 'lazy';
+        img.alt = gif.title||'GIF';
+        (function(f){ img.onclick = function(){
           grid.querySelectorAll('img').forEach(function(i){ i.style.borderColor='transparent'; });
           img.style.borderColor = 'var(--sage)';
-          pendingGifUrl = url;
-          // Show in message preview
+          pendingGifUrl = f;
           var ta = document.getElementById('msg-text');
-          if(ta) ta.dataset.gifUrl = url;
-          // Show confirmation under grid
+          if(ta) ta.dataset.gifUrl = f;
           var conf = document.getElementById('gif-confirm');
           if(conf){ conf.style.display='block'; conf.textContent='GIF selected ✓ — will send with your message'; }
-          togglePicker('gif'); // close panel
-        };
+          togglePicker('gif');
+        }; })(fullUrl);
         grid.appendChild(img);
       });
-      if(!grid.children.length) grid.innerHTML='<p style="grid-column:1/-1;text-align:center;font-size:0.82rem;color:var(--ink-soft);padding:1rem 0">No results</p>';
+      if(!grid.children.length) grid.innerHTML='<p style="grid-column:1/-1;text-align:center;font-size:0.82rem;color:var(--ink-soft);padding:1rem 0">No results — try another search</p>';
     })
-    .catch(function(){ grid.innerHTML='<p style="grid-column:1/-1;text-align:center;font-size:0.82rem;color:var(--ink-soft);padding:1rem 0">Could not load GIFs</p>'; });
-}
-
-function updateCharCount(){
-  var v = document.getElementById('msg-text');
-  var el = document.getElementById('char-count');
-  if(!v||!el) return;
-  var rem = 300 - v.value.length;
-  el.textContent = rem;
-  el.style.color = rem < 30 ? '#b83232' : '';
-}
-
-// ── POSTS ──────────────────────────────────────────────────
-var postsCache = [];
-
-function timeAgo(iso){
-  var diff = (Date.now() - new Date(iso)) / 1000;
-  if(diff < 60) return 'just now';
-  if(diff < 3600) return Math.floor(diff/60)+'m ago';
-  if(diff < 86400) return Math.floor(diff/3600)+'h ago';
-  return Math.floor(diff/86400)+'d ago';
-}
-
-var repliesCache = {};
-
-function loadPosts(){
-  supa.from('posts').select('*').order('created_at',{ascending:true}).limit(200)
-    .then(function(res){
-      if(res.error){ showPostsError(res.error.message); return; }
-      var all = res.data||[];
-      // Separate top-level from replies
-      postsCache = all.filter(function(p){ return !p.reply_to; }).reverse();
-      repliesCache = {};
-      all.filter(function(p){ return p.reply_to; }).forEach(function(r){
-        if(!repliesCache[r.reply_to]) repliesCache[r.reply_to] = [];
-        repliesCache[r.reply_to].push(r);
-      });
-      renderPosts();
-    }).catch(function(e){ showPostsError(e&&e.message?e.message:'Network error'); });
-}
-
-function showPostsError(msg){
-  var el = document.getElementById('posts-list');
-  if(el) el.innerHTML = '<div class="empty"><div class="empty-icon">😬</div><p>'+escHtml(msg)+'</p></div>';
-}
-
-function renderPosts(){
-  var list = document.getElementById('posts-list');
-  var count = document.getElementById('feed-count');
-  if(count) count.textContent = postsCache.length + (postsCache.length===1?' message':' messages');
-  if(!postsCache.length){
-    list.innerHTML = '<div class="empty"><div class="empty-icon">💌</div><p>No messages yet — be the first!</p></div>';
-    return;
-  }
-  list.innerHTML = '';
-  postsCache.forEach(function(p){
-    var card = document.createElement('div');
-    card.className = 'post-card';
-    card.id = 'post-'+p.id;
-
-    var av = document.createElement('div');
-    av.className = 'post-avatar';
-    av.textContent = p.emoji || '😊';
-    card.appendChild(av);
-
-    var bubble = document.createElement('div');
-    bubble.className = 'post-bubble';
-
-    var meta = document.createElement('div');
-    meta.className = 'post-meta';
-    meta.innerHTML = '<span class="post-name">'+escHtml(p.name)+'</span><span class="post-time">'+timeAgo(p.created_at)+'</span>';
-    bubble.appendChild(meta);
-
-    var txt = document.createElement('div');
-    txt.className = 'post-text';
-    txt.textContent = p.message;
-    bubble.appendChild(txt);
-    // GIF attachment
-    if(p.gif_url){
-      var gifImg = document.createElement('img');
-      gifImg.src = p.gif_url;
-      gifImg.style.cssText = 'max-width:240px;width:100%;border-radius:8px;margin-top:0.5rem;display:block';
-      gifImg.alt = 'GIF';
-      bubble.appendChild(gifImg);
-    }
-
-    // Reactions
-    var reactions = p.reactions || {};
-    var reacted = JSON.parse(localStorage.getItem('reacted_'+p.id)||'{}');
-    var reactDiv = document.createElement('div');
-    reactDiv.className = 'reactions';
-    var REACT_EMOJIS = ['❤️','😂','🥂','👏'];
-    REACT_EMOJIS.forEach(function(r){
-      var cnt = reactions[r]||0;
-      var btn = document.createElement('button');
-      btn.className = 'react-btn' + (reacted[r]?' reacted':'');
-      btn.innerHTML = r + (cnt>0?'<span class="react-count">'+cnt+'</span>':'');
-      (function(postId,reaction){ btn.onclick = function(){ reactPost(postId,reaction); }; })(p.id, r);
-      reactDiv.appendChild(btn);
-    });
-    bubble.appendChild(reactDiv);
-
-    // Reply button
-    var replyBar = document.createElement('div');
-    replyBar.style.cssText = 'margin-top:0.5rem';
-    var replyBtn = document.createElement('button');
-    replyBtn.textContent = '↩ Reply';
-    replyBtn.style.cssText = 'border:1px solid var(--line);background:none;font-size:0.72rem;color:var(--ink-soft);cursor:pointer;padding:0.18rem 0.6rem;border-radius:20px;font-family:"Jost",sans-serif;letter-spacing:0.06em;margin-top:0.2rem';
-    (function(pid){ replyBtn.onclick = function(){ toggleReplyBox(pid); }; })(p.id);
-    replyBar.appendChild(replyBtn);
-    bubble.appendChild(replyBar);
-
-    // Inline reply compose (hidden by default)
-    var replyBox = document.createElement('div');
-    replyBox.id = 'rb-'+p.id;
-    replyBox.style.cssText = 'display:none;margin-top:0.5rem;gap:0.4rem;align-items:flex-end';
-    var replyInput = document.createElement('textarea');
-    replyInput.id = 'ri-'+p.id;
-    replyInput.placeholder = 'Write a reply…';
-    replyInput.maxLength = 200;
-    replyInput.rows = 2;
-    replyInput.style.cssText = 'flex:1;font-family:"Jost",sans-serif;font-size:0.86rem;border:1.5px solid var(--line);border-radius:6px;padding:0.4rem 0.6rem;background:#fff;color:var(--ink);resize:none;width:100%;box-sizing:border-box';
-    var sendBtn = document.createElement('button');
-    sendBtn.textContent = 'Send';
-    sendBtn.style.cssText = 'margin-top:0.4rem;padding:0.4rem 0.9rem;border:none;border-radius:4px;background:var(--sage);color:#fff;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap';
-    (function(pid){ sendBtn.onclick = function(){ submitReply(pid); }; })(p.id);
-    replyBox.appendChild(replyInput);
-    replyBox.appendChild(sendBtn);
-    bubble.appendChild(replyBox);
-
-    card.appendChild(bubble);
-
-    // Existing replies (thread)
-    var replies = repliesCache[p.id]||[];
-    if(replies.length){
-      var thread = document.createElement('div');
-      thread.style.cssText = 'margin-top:0.5rem;margin-left:52px;border-left:2px solid var(--sage-pale);padding-left:0.75rem;display:flex;flex-direction:column;gap:0.4rem';
-      replies.forEach(function(r){
-        var rcard = document.createElement('div');
-        rcard.style.cssText = 'display:flex;gap:0.5rem;align-items:flex-start';
-        var rav = document.createElement('div');
-        rav.style.cssText = 'width:28px;height:28px;border-radius:50%;background:var(--stone);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0';
-        rav.textContent = r.emoji||'😊';
-        var rbubble = document.createElement('div');
-        rbubble.style.cssText = 'background:var(--stone);border-radius:0 8px 8px 8px;padding:0.45rem 0.7rem;flex:1;min-width:0';
-        var rmeta = document.createElement('div');
-        rmeta.style.cssText = 'margin-bottom:0.15rem';
-        rmeta.innerHTML = '<span style="font-weight:600;font-size:0.78rem">'+escHtml(r.name)+'</span> <span style="font-size:0.66rem;color:var(--ink-soft)">'+timeAgo(r.created_at)+'</span>';
-        var rtxt = document.createElement('div');
-        rtxt.style.cssText = 'font-size:0.86rem;line-height:1.4;word-break:break-word';
-        rtxt.textContent = r.message;
-        rbubble.appendChild(rmeta);
-        rbubble.appendChild(rtxt);
-        rcard.appendChild(rav);
-        rcard.appendChild(rbubble);
-        thread.appendChild(rcard);
-      });
-      list.appendChild(card);
-      list.appendChild(thread);
-    } else {
-      list.appendChild(card);
-    }
-  });
-}
-
-function submitPost(){
-  var name = document.getElementById('msg-name').value.trim();
-  var message = document.getElementById('msg-text').value.trim();
-  var status = document.getElementById('msg-status');
-  var btn = document.getElementById('post-btn');
-  if(!name){ showStatus(status,'Enter your name first 👆','err'); return; }
-  if(!message){ showStatus(status,'Write something first!','err'); return; }
-  btn.disabled = true;
-  var ta = document.getElementById('msg-text');
-  var gifUrl = (ta && ta.dataset.gifUrl) || null;
-  var row = {name:name, message:message, emoji:selectedEmoji, reactions:{}};
-  if(gifUrl) row.gif_url = gifUrl;
-  supa.from('posts').insert(row)
-    .then(function(res){
-      if(res.error){ showStatus(status,'Error: '+res.error.message,'err'); btn.disabled=false; return; }
-      document.getElementById('msg-text').value = '';
-      document.getElementById('char-count').textContent = '300';
-      if(ta) ta.dataset.gifUrl = '';
-      pendingGifUrl = null;
-      var conf=document.getElementById('gif-confirm'); if(conf) conf.style.display='none';
-      showStatus(status,'Posted! 🎉','ok');
-      loadPosts();
-      btn.disabled = false;
-    }).catch(function(e){
-      showStatus(status,'Failed: '+(e&&e.message?e.message:e),'err');
-      btn.disabled = false;
+    .catch(function(e){
+      grid.innerHTML='<p style="grid-column:1/-1;text-align:center;font-size:0.82rem;color:var(--ink-soft);padding:1rem 0">Could not load GIFs</p>';
+      console.warn('Giphy fetch failed:', e);
     });
 }
-
-function reactPost(postId, reaction){
-  var reacted = JSON.parse(localStorage.getItem('reacted_'+postId)||'{}');
-  if(reacted[reaction]) return;
-  supa.from('posts').select('reactions').eq('id',postId).single()
-    .then(function(res){
-      var reactions = (res.data&&res.data.reactions)||{};
-      reactions[reaction] = (reactions[reaction]||0)+1;
-      return supa.from('posts').update({reactions:reactions}).eq('id',postId);
-    }).then(function(){
-      reacted[reaction]=true;
-      localStorage.setItem('reacted_'+postId, JSON.stringify(reacted));
-      loadPosts();
-    }).catch(function(e){ console.warn('react failed',e); });
-}
-
-function toggleReplyBox(postId){
-  var box = document.getElementById('rb-'+postId);
-  if(!box) return;
-  var showing = box.style.display !== 'none';
-  box.style.display = showing ? 'none' : 'flex';
-  if(!showing){
-    var ri = document.getElementById('ri-'+postId);
-    if(ri) ri.focus();
-  }
-}
-
-function submitReply(postId){
-  var ri = document.getElementById('ri-'+postId);
-  var name = document.getElementById('msg-name').value.trim();
-  if(!ri) return;
-  var message = ri.value.trim();
-  if(!name){ alert('Enter your name in the message box above first.'); return; }
-  if(!message) return;
-  ri.disabled = true;
-  supa.from('posts').insert({name:name, message:message, emoji:selectedEmoji, reactions:{}, reply_to:postId})
-    .then(function(res){
-      if(res.error){ console.warn('Reply error:', res.error.message); ri.disabled=false; return; }
-      ri.value = '';
-      ri.disabled = false;
-      document.getElementById('rb-'+postId).style.display = 'none';
-      loadPosts();
-    }).catch(function(e){
-      console.warn('Reply failed:', e);
-      ri.disabled = false;
-    });
-}
-
-// ── POLLS ──────────────────────────────────────────────────
-var pollsCache = [];
-var myVotes = JSON.parse(localStorage.getItem('my_votes')||'{}');
-
-var SEED_POLLS = [
-  {question:'Who cries first?', options:['Bruno','Sally','Father of the bride','An unexpected guest']},
-  {question:'What time does Bruno fall asleep at the after-party?', options:['Before midnight','12–1am','1–2am','Still going at 3am']},
-  {question:'Weather on the day?', options:['Full Devon sunshine ☀️','Light drizzle 🌦️','Full monsoon 🌧️','All three in one day']},
-  {question:'How many Aperol Spritzes get consumed?', options:['Under 50','50–100','100–200','Lost count after 100']},
-  {question:'Will the hog roast run out?', options:['Yes — chaos ensues','No — plenty for all','There are leftovers','What hog roast?']},
-  {question:'Who gives the most chaotic speech?', options:['Groomsman Jamie','Father of the bride','Bruno','Sally']},
-  {question:"What is Bruno's first dance move?", options:['Dignified and smooth','Enthusiastic but risky','Full dad-dance energy','Refuses to move at all']},
-  {question:'Does anyone get lost on the way to Newton Ferrers?', options:['At least 3 cars','Just one — and they know who','Nobody — Google Maps saves the day','Everyone arrives somehow']},
-];
-
-function loadPolls(){
-  var grid = document.getElementById('poll-grid');
-  grid.innerHTML = '<div class="loading">Loading predictions…</div>';
-  supa.from('polls').select('*').order('created_at',{ascending:true})
-    .then(function(res){
-      if(res.error){ grid.innerHTML='<div class="empty"><p>Error: '+escHtml(res.error.message)+'</p></div>'; return; }
-      var data = res.data||[];
-      if(data.length===0){
-        return supa.from('polls').insert(SEED_POLLS.map(function(p){
-          return {question:p.question, options:p.options.map(function(o){ return {text:o,votes:0}; })};
-        })).then(function(){ return supa.from('polls').select('*').order('created_at',{ascending:true}); })
-          .then(function(res2){ pollsCache=res2.data||[]; renderPolls(); });
-      }
-      pollsCache = data;
-      renderPolls();
-    }).catch(function(e){
-      grid.innerHTML='<div class="empty"><p>Failed to load: '+escHtml(e&&e.message?e.message:String(e))+'</p></div>';
-    });
-}
-
-function renderPolls(){
-  var grid = document.getElementById('poll-grid');
-  if(!pollsCache.length){ grid.innerHTML='<div class="empty"><p>No predictions yet.</p></div>'; return; }
-  grid.innerHTML = '';
-  pollsCache.forEach(function(poll, pi){
-    var opts = poll.options||[];
-    var total = opts.reduce(function(s,o){ return s+(o.votes||0); },0);
-    var voted = myVotes[poll.id];
-
-    var card = document.createElement('div');
-    card.className = 'poll-card';
-
-    if(pi<3){
-      var pin = document.createElement('div');
-      pin.className = 'poll-pin';
-      pin.textContent = '📌 Featured prediction';
-      card.appendChild(pin);
-    }
-
-    var q = document.createElement('div');
-    q.className = 'poll-q';
-    q.textContent = poll.question;
-    card.appendChild(q);
-
-    var optsDiv = document.createElement('div');
-    optsDiv.className = 'poll-opts';
-
-    opts.forEach(function(opt, oi){
-      var pct = total>0 ? Math.round((opt.votes||0)/total*100) : 0;
-      var isSel = voted===oi;
-
-      var optEl = document.createElement('div');
-      optEl.className = 'poll-opt' + (isSel?' voted':'');
-
-      var bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.width = (voted!==undefined?pct:0)+'%';
-      optEl.appendChild(bar);
-
-      var label = document.createElement('div');
-      label.className = 'label';
-      label.innerHTML = '<span>'+escHtml(opt.text)+(isSel?' ✓':'')+'</span>'+(voted!==undefined?'<span class="pct">'+pct+'%</span>':'');
-      optEl.appendChild(label);
-
-      if(voted===undefined){
-        (function(pollId, optIdx){ optEl.onclick = function(){ castVote(pollId, optIdx); }; })(poll.id, oi);
-      }
-      optsDiv.appendChild(optEl);
-    });
-    card.appendChild(optsDiv);
-
-    if(voted!==undefined){
-      var tot = document.createElement('div');
-      tot.className = 'poll-total';
-      tot.textContent = total+' vote'+(total!==1?'s':'');
-      card.appendChild(tot);
-    } else {
-      var tap = document.createElement('div');
-      tap.className = 'poll-total';
-      tap.style.fontStyle = 'italic';
-      tap.textContent = 'Tap to vote';
-      card.appendChild(tap);
-    }
-    grid.appendChild(card);
-  });
-}
-
-function castVote(pollId, optionIdx){
-  if(myVotes[pollId]!==undefined) return;
-  myVotes[pollId] = optionIdx;
-  localStorage.setItem('my_votes', JSON.stringify(myVotes));
-  var cached = pollsCache.find(function(p){ return p.id===pollId; });
-  if(cached){ cached.options[optionIdx].votes=(cached.options[optionIdx].votes||0)+1; renderPolls(); }
-  supa.from('polls').select('options').eq('id',pollId).single()
-    .then(function(res){
-      var opts = JSON.parse(JSON.stringify(res.data.options));
-      opts[optionIdx].votes=(opts[optionIdx].votes||0)+1;
-      return supa.from('polls').update({options:opts}).eq('id',pollId);
-    }).then(function(){
-      if(cached) renderPolls();
-    }).catch(function(e){
-      delete myVotes[pollId];
-      localStorage.setItem('my_votes',JSON.stringify(myVotes));
-      if(cached){ cached.options[optionIdx].votes=Math.max(0,(cached.options[optionIdx].votes||1)-1); renderPolls(); }
-    });
-}
-
-// ── UTILS ──────────────────────────────────────────────────
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function showStatus(el, msg, type){
-  if(!el) return;
-  el.textContent = msg;
-  el.className = 'status-msg show '+type;
-  setTimeout(function(){ el.className='status-msg'; }, 4000);
-}
-
 // ── REALTIME ───────────────────────────────────────────────
 // Subscribe to INSERT and UPDATE on posts table
 // Requires Realtime enabled on the posts table in Supabase dashboard:
