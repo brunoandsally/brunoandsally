@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Bruno & Sally — 18th September 2027</title>
-<meta name="description" content="Bruno & Sally are getting married in Devon, 18th September 2027."/>
+<title>Bruno &amp; Sally — 20th September 2027</title>
+<meta name="description" content="Bruno &amp; Sally are getting married in Devon, 20th September 2027."/>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -21,60 +21,132 @@
 html,body{height:100%;overflow:hidden;font-family:"Jost",sans-serif}
 body{display:flex;flex-direction:column;background:var(--cream)}
 
-/* PASSWORD GATE */
-#pw-gate{
+/* ── NAME GATE ───────────────────────────────────────────── */
+#name-gate{
   position:fixed;inset:0;z-index:9999;
   background:var(--cream);
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;
   padding:2rem;
+  transition:opacity 0.4s;
 }
-#pw-gate.hidden{display:none}
-.pw-sun{margin-bottom:1.6rem}
-.pw-sun svg{width:64px;height:64px}
-.pw-title{
+#name-gate.hidden{display:none}
+
+.gate-sun{margin-bottom:1.6rem}
+.gate-sun svg{width:64px;height:64px}
+
+.gate-title{
   font-family:"Cormorant Garamond",serif;
   font-size:clamp(1.8rem,5vw,2.8rem);
   font-weight:300;color:var(--ink);
   text-align:center;margin-bottom:0.3rem;
 }
-.pw-title span{color:var(--sage);font-style:italic}
-.pw-sub{
+.gate-title span{color:var(--sage);font-style:italic}
+.gate-sub{
   font-size:0.82rem;color:var(--ink-soft);
   text-align:center;margin-bottom:2.2rem;
   letter-spacing:0.02em;
 }
-.pw-form{
+
+/* ── SCREEN A: name lookup ── */
+#screen-lookup{
   display:flex;flex-direction:column;align-items:center;
-  gap:0.9rem;width:100%;max-width:320px;
+  gap:0.9rem;width:100%;max-width:340px;
 }
-.pw-input{
+.gate-label{
+  font-size:0.72rem;font-weight:600;letter-spacing:0.16em;
+  text-transform:uppercase;color:var(--ink-soft);
+  align-self:flex-start;
+}
+.gate-input{
   width:100%;padding:0.85rem 1.1rem;
   border:1.5px solid var(--line);border-radius:2px;
   background:#fff;font-family:"Jost",sans-serif;
   font-size:1rem;color:var(--ink);
-  text-align:center;letter-spacing:0.06em;
+  text-align:center;
   outline:none;transition:border-color 0.2s;
 }
-.pw-input:focus{border-color:var(--sage)}
-.pw-input.shake{animation:shake 0.35s ease}
-.pw-btn{
+.gate-input:focus{border-color:var(--sage)}
+.gate-input.shake{animation:shake 0.35s ease}
+.gate-btn{
   width:100%;padding:0.85rem;
   background:var(--sage);color:#fff;border:none;border-radius:2px;
   font-family:"Jost",sans-serif;font-size:0.72rem;
   font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
   cursor:pointer;transition:background 0.2s;
 }
-.pw-btn:hover{background:var(--sage-light)}
-.pw-err{
+.gate-btn:hover{background:var(--sage-light)}
+.gate-err{
   font-size:0.78rem;color:#a85a20;
   min-height:1.1em;text-align:center;
 }
-.pw-hint{
-  font-size:0.72rem;color:var(--ink-soft);
-  text-align:center;margin-top:0.4rem;
-  max-width:28ch;line-height:1.5;
+
+/* ── SCREEN B: success card ── */
+#screen-result{
+  display:none;
+  flex-direction:column;align-items:center;
+  width:100%;max-width:400px;
+  gap:0;
 }
+.result-card{
+  width:100%;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:3px;
+  overflow:hidden;
+  box-shadow:0 4px 24px rgba(44,44,42,0.08);
+}
+.result-card-top{
+  background:var(--sage);
+  padding:1.6rem 1.8rem 1.4rem;
+  color:#fff;
+}
+.result-card-top .rc-eyebrow{
+  font-size:0.65rem;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;
+  color:rgba(255,255,255,0.72);margin-bottom:0.5rem;
+}
+.result-card-top h2{
+  font-family:"Cormorant Garamond",serif;font-size:1.8rem;
+  font-weight:300;line-height:1.1;
+}
+.result-card-body{padding:1.4rem 1.8rem}
+.invite-row{
+  display:flex;align-items:baseline;gap:0.7rem;
+  padding:0.6rem 0;border-bottom:1px solid var(--line);
+  font-size:0.88rem;
+}
+.invite-row:last-child{border-bottom:none}
+.invite-lbl{
+  font-size:0.65rem;font-weight:600;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--warm);flex-shrink:0;width:90px;
+}
+.invite-val{color:var(--ink)}
+
+.result-actions{
+  width:100%;
+  display:flex;flex-direction:column;gap:0.7rem;
+  margin-top:1.4rem;
+}
+.btn-form{
+  display:flex;align-items:center;justify-content:center;gap:0.6rem;
+  padding:0.85rem 1.2rem;
+  background:var(--warm);color:#fff;border:none;border-radius:2px;
+  font-family:"Jost",sans-serif;font-size:0.72rem;
+  font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  cursor:pointer;text-decoration:none;
+  transition:background 0.2s;width:100%;
+}
+.btn-form:hover{background:#b8793a}
+.btn-enter{
+  padding:0.85rem 1.2rem;
+  background:transparent;color:var(--ink);
+  border:1.5px solid var(--line);border-radius:2px;
+  font-family:"Jost",sans-serif;font-size:0.72rem;
+  font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;width:100%;
+}
+.btn-enter:hover{border-color:var(--ink);background:var(--ink);color:#fff}
+
 @keyframes shake{
   0%,100%{transform:translateX(0)}
   20%{transform:translateX(-8px)}
@@ -82,8 +154,13 @@ body{display:flex;flex-direction:column;background:var(--cream)}
   60%{transform:translateX(-6px)}
   80%{transform:translateX(6px)}
 }
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+#screen-result.showing{animation:fadeUp 0.35s ease forwards}
 
-/* NAV */
+/* ── NAV ─────────────────────────────────────────────────── */
 #nav{
   flex-shrink:0;
   background:rgba(250,248,243,0.97);
@@ -136,14 +213,14 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 }
 .nav-drawer a:hover{color:#fff}
 
-/* IFRAME */
+/* ── IFRAME ──────────────────────────────────────────────── */
 #content-frame{
   flex:1;border:none;width:100%;
   transition:opacity 0.2s;
 }
 #content-frame.loading{opacity:0.5}
 
-/* SPOTIFY */
+/* ── SPOTIFY ─────────────────────────────────────────────── */
 #spotify-bar{
   position:fixed;bottom:0;left:0;right:0;z-index:300;
   background:#0a0a0a;
@@ -164,7 +241,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 #spotify-toggle.bar-open{bottom:92px}
 #spotify-toggle svg{width:24px;height:24px;fill:white}
 
-/* LOADING INDICATOR */
+/* ── LOADING BAR ─────────────────────────────────────────── */
 #page-loader{
   position:fixed;top:64px;left:0;right:0;height:2px;
   background:var(--sage);transform:scaleX(0);transform-origin:left;
@@ -182,9 +259,9 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 </head>
 <body>
 
-<!-- NAV -->
-<div id="pw-gate">
-  <div class="pw-sun">
+<!-- ── NAME GATE ──────────────────────────────────────────── -->
+<div id="name-gate">
+  <div class="gate-sun">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="22" fill="#C4894A"/>
       <g stroke="#C4894A" stroke-width="7" stroke-linecap="round">
@@ -199,20 +276,45 @@ body{display:flex;flex-direction:column;background:var(--cream)}
       </g>
     </svg>
   </div>
-  <h1 class="pw-title">Bruno <span>&amp;</span> Sally</h1>
-  <p class="pw-sub">18th September 2027 &middot; Newton Ferrers, Devon</p>
-  <div class="pw-form">
-    <input class="pw-input" id="pw-input" type="password"
-      placeholder="Enter password"
-      autocomplete="current-password"
-      onkeydown="if(event.key==='Enter')checkPw()"/>
-    <button class="pw-btn" onclick="checkPw()">Enter</button>
-    <p class="pw-err" id="pw-err"></p>
-    <p class="pw-hint">Check your invitation for the password, or drop us a message.</p>
+  <h1 class="gate-title">Bruno <span>&amp;</span> Sally</h1>
+  <p class="gate-sub">20th September 2027 &middot; Newton Ferrers, Devon</p>
+
+  <!-- Screen A: lookup -->
+  <div id="screen-lookup">
+    <p class="gate-label">Your name</p>
+    <input class="gate-input" id="name-input" type="text"
+      placeholder="e.g. Jane Smith"
+      autocomplete="name"
+      onkeydown="if(event.key==='Enter')checkName()"/>
+    <button class="gate-btn" onclick="checkName()">Find my invitation</button>
+    <p class="gate-err" id="name-err"></p>
+  </div>
+
+  <!-- Screen B: result card -->
+  <div id="screen-result">
+    <div class="result-card">
+      <div class="result-card-top">
+        <p class="rc-eyebrow">You're on the list ✓</p>
+        <h2 id="result-name"></h2>
+      </div>
+      <div class="result-card-body">
+        <div class="invite-row"><span class="invite-lbl">Invited to</span><span class="invite-val" id="result-invite"></span></div>
+        <div class="invite-row" id="result-ceremony-row"><span class="invite-lbl">Ceremony</span><span class="invite-val">Holy Cross Church, Newton Ferrers · 12:30 PM</span></div>
+        <div class="invite-row"><span class="invite-lbl">Reception</span><span class="invite-val">Carswell, Devon · from 18:30</span></div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <a id="rsvp-form-link" class="btn-form"
+        href="https://docs.google.com/forms/d/e/1FAIpQLScoSFQtFHedJcSKe9RtJZTQf8iXfOKdTP-ZTZJGZorPxl32gA/viewform"
+        target="_blank" rel="noopener">
+        ✉&nbsp; RSVP now
+      </a>
+      <button class="btn-enter" id="enter-site-btn">Enter the site &rarr;</button>
+    </div>
   </div>
 </div>
 
-
+<!-- ── NAV ───────────────────────────────────────────────── -->
 <nav id="nav">
   <div class="nav-inner">
     <a class="nav-brand" onclick="nav('home');return false" href="/home">Bruno <span>&amp;</span> Sally</a>
@@ -262,75 +364,149 @@ body{display:flex;flex-direction:column;background:var(--cream)}
 </button>
 
 <script>
-// ── Password gate ─────────────────────────────────────────────
-var PW_KEY = 'bs_auth';
-var PW_HASH = '7a8b2c4d9e1f3a5b'; // marker — real check below
+// ── Guest list (loaded from CSV at runtime) ───────────────
+var GUESTS = null; // [{name, invite_type}]
+var AUTH_KEY = 'bs_guest_auth';
+var FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScoSFQtFHedJcSKe9RtJZTQf8iXfOKdTP-ZTZJGZorPxl32gA/viewform';
 
-function checkPw() {
-  var val = document.getElementById('pw-input').value;
-  var err = document.getElementById('pw-err');
-  if (val === 'Bruno\u0026Sally!') {
-    sessionStorage.setItem(PW_KEY, '1');
-    document.getElementById('pw-gate').classList.add('hidden');
-    err.textContent = '';
-  } else {
-    err.textContent = 'Incorrect password — try again.';
-    var inp = document.getElementById('pw-input');
-    inp.classList.remove('shake');
-    void inp.offsetWidth; // force reflow
-    inp.classList.add('shake');
-    inp.value = '';
-    inp.focus();
-  }
+function loadGuests(cb) {
+  if (GUESTS !== null) { cb(); return; }
+  fetch('/rsvp/guests.csv')
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      GUESTS = [];
+      var lines = txt.trim().split('\n');
+      // skip header
+      for (var i = 1; i < lines.length; i++) {
+        var parts = lines[i].split(',');
+        if (parts.length >= 2) {
+          GUESTS.push({
+            name: parts[0].trim(),
+            invite_type: parts[1].trim()
+          });
+        }
+      }
+      cb();
+    })
+    .catch(function(){ GUESTS = []; cb(); });
 }
 
-// Show gate or proceed straight to site
-if (sessionStorage.getItem(PW_KEY) === '1') {
-  document.getElementById('pw-gate').classList.add('hidden');
-} else {
-  // Hide the main site until authenticated
-  document.getElementById('nav').style.visibility = 'hidden';
-  document.getElementById('content-frame').style.visibility = 'hidden';
-  document.getElementById('spotify-toggle').style.visibility = 'hidden';
-  window.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('pw-input').focus();
+function normaliseName(s) {
+  return s.trim().toLowerCase().replace(/\s+/g,' ');
+}
+
+function findGuest(input) {
+  var q = normaliseName(input);
+  for (var i = 0; i < GUESTS.length; i++) {
+    if (normaliseName(GUESTS[i].name) === q) return GUESTS[i];
+  }
+  return null;
+}
+
+// ── Name gate logic ───────────────────────────────────────
+function checkName() {
+  var input = document.getElementById('name-input');
+  var err   = document.getElementById('name-err');
+  var val   = input.value.trim();
+
+  if (!val) {
+    err.textContent = 'Please enter your name.';
+    input.focus();
+    return;
+  }
+
+  err.textContent = '';
+
+  loadGuests(function() {
+    var guest = findGuest(val);
+    if (guest) {
+      showResult(guest);
+    } else {
+      err.textContent = 'Name not found \u2014 try your full name as it appears on your invitation.';
+      input.classList.remove('shake');
+      void input.offsetWidth;
+      input.classList.add('shake');
+      input.select();
+    }
   });
 }
 
-// Unhide everything once gate is dismissed
-var _gateObs = new MutationObserver(function() {
-  if (document.getElementById('pw-gate').classList.contains('hidden')) {
-    document.getElementById('nav').style.visibility = '';
-    document.getElementById('content-frame').style.visibility = '';
-    document.getElementById('spotify-toggle').style.visibility = '';
-    _gateObs.disconnect();
-  }
-});
-_gateObs.observe(document.getElementById('pw-gate'), {attributes:true});
+function inviteLabel(type) {
+  if (type === 'ceremony_reception') return 'Ceremony &amp; Reception';
+  if (type === 'reception')          return 'Reception only';
+  return type;
+}
 
+function showResult(guest) {
+  // Populate card
+  document.getElementById('result-name').textContent = guest.name;
+  document.getElementById('result-invite').innerHTML = inviteLabel(guest.invite_type);
+
+  // Hide ceremony row for reception-only guests
+  var ceremRow = document.getElementById('result-ceremony-row');
+  if (guest.invite_type === 'reception') {
+    ceremRow.style.display = 'none';
+  } else {
+    ceremRow.style.display = '';
+  }
+
+  // Append name to RSVP form URL as a prefill hint (entry.name field not mapped, just friendly)
+  document.getElementById('rsvp-form-link').href = FORM_URL;
+
+  // Switch screens
+  document.getElementById('screen-lookup').style.display = 'none';
+  var res = document.getElementById('screen-result');
+  res.style.display = 'flex';
+  res.classList.add('showing');
+
+  // Persist auth to localStorage
+  localStorage.setItem(AUTH_KEY, JSON.stringify({name: guest.name, invite_type: guest.invite_type}));
+}
+
+function unlockSite() {
+  document.getElementById('name-gate').classList.add('hidden');
+  document.getElementById('nav').style.visibility = '';
+  document.getElementById('content-frame').style.visibility = '';
+  document.getElementById('spotify-toggle').style.visibility = '';
+}
+
+// Enter site button
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('enter-site-btn').addEventListener('click', function() {
+    unlockSite();
+  });
+  document.getElementById('name-input').focus();
+});
+
+// ── Check localStorage on load ────────────────────────────
+(function() {
+  var stored = localStorage.getItem(AUTH_KEY);
+  if (stored) {
+    // Already verified — go straight in
+    document.getElementById('name-gate').classList.add('hidden');
+  } else {
+    // Hide site until authenticated
+    document.getElementById('nav').style.visibility = 'hidden';
+    document.getElementById('content-frame').style.visibility = 'hidden';
+    document.getElementById('spotify-toggle').style.visibility = 'hidden';
+  }
+})();
+
+// ── Navigation ────────────────────────────────────────────
 var spOpen = false;
 var currentPage = '';
 var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
 var frame = document.getElementById('content-frame');
 
-// ── Navigation ──────────────────────────────────────────────
 function nav(page, pushState) {
   if (!page || VALID.indexOf(page) < 0) page = 'home';
   currentPage = page;
-
-  // Update URL bar
   if (pushState !== false) {
     history.pushState({page: page}, '', '/' + page);
   }
-
-  // Update active highlights
   setActive(page);
-
-  // Progress bar
   var loader = document.getElementById('page-loader');
   loader.className = 'loading';
-
-  // Load page into iframe — onload replaces itself each time (no stacking)
   frame.classList.add('loading');
   frame.onload = function() {
     frame.classList.remove('loading');
@@ -347,26 +523,20 @@ function setActive(page) {
   });
 }
 
-// ── Messages from inside the iframe ─────────────────────────
-// Content pages post: window.parent.postMessage({nav:'page-name'}, '*')
 window.addEventListener('message', function(e) {
   if (e.data && e.data.nav && VALID.indexOf(e.data.nav) >= 0) {
     nav(e.data.nav);
   }
 });
 
-// ── Browser back / forward ──────────────────────────────────
 window.addEventListener('popstate', function(e) {
   var page = (e.state && e.state.page) ? e.state.page : 'home';
   nav(page, false);
 });
 
-// ── Detect initial page from URL or hash (set by redirect) ──
 function getInitialPage() {
-  // Check hash first — set by content pages when loaded directly
   var hash = window.location.hash.replace(/^#/, '');
   if (hash && VALID.indexOf(hash) >= 0) {
-    // Clean the hash from the URL
     history.replaceState({page: hash}, '', '/' + hash);
     return hash;
   }
@@ -374,22 +544,18 @@ function getInitialPage() {
   return VALID.indexOf(path) >= 0 ? path : 'home';
 }
 
-// ── Spotify ──────────────────────────────────────────────────
 function toggleSpotify() {
   spOpen = !spOpen;
   document.getElementById('spotify-bar').classList.toggle('open', spOpen);
   document.getElementById('spotify-toggle').classList.toggle('bar-open', spOpen);
 }
 
-// ── Mobile drawer ─────────────────────────────────────────────
 function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
 function closeDrawer()  { document.getElementById('drawer').classList.remove('open'); }
 
-// ── Handle redirect from 404.html (page refresh on deep link) ─
 var _redirect = sessionStorage.getItem('redirect-page');
 if (_redirect) { sessionStorage.removeItem('redirect-page'); }
 
-// ── Init ─────────────────────────────────────────────────────
 var initPage = _redirect || getInitialPage();
 currentPage = initPage;
 document.querySelectorAll('[data-page]').forEach(function(a) {
