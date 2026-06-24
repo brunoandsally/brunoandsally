@@ -451,7 +451,7 @@ function checkName() {
 
 function inviteLabel(type) {
   if (type === 'ceremony_reception') return 'Ceremony &amp; Reception';
-  if (type === 'reception')          return 'Reception only';
+  if (type === 'reception_only' || type === 'reception') return 'Reception';
   return type;
 }
 
@@ -462,7 +462,7 @@ function showResult(guest) {
 
   // Hide ceremony row for reception-only guests
   var ceremRow = document.getElementById('result-ceremony-row');
-  if (guest.invite_type === 'reception') {
+  if (guest.invite_type === 'reception_only' || guest.invite_type === 'reception') {
     ceremRow.style.display = 'none';
   } else {
     ceremRow.style.display = '';
@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Already verified — go straight in, apply invite type restrictions
     try {
       var g = JSON.parse(stored);
-      if (g.invite_type === 'reception') {
+      if (g.invite_type === 'reception_only' || g.invite_type === 'reception') {
         var cr = document.getElementById('result-ceremony-row');
         if (cr) cr.style.display = 'none';
       }
