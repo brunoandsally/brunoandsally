@@ -517,6 +517,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch(e) {}
     document.getElementById('name-gate').classList.add('hidden');
+    document.getElementById('nav').style.visibility = '';
+    document.getElementById('content-frame').style.visibility = '';
+    document.getElementById('spotify-toggle').style.visibility = '';
   } else {
     // Hide site until authenticated
     document.getElementById('nav').style.visibility = 'hidden';
@@ -559,6 +562,9 @@ function setActive(page) {
 window.addEventListener('message', function(e) {
   if (e.data && e.data.nav && VALID.indexOf(e.data.nav) >= 0) {
     nav(e.data.nav);
+  }
+  if (e.data && typeof e.data.scrollTo === 'number') {
+    window.scrollTo(0, e.data.scrollTo);
   }
 });
 

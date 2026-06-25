@@ -88,7 +88,7 @@ body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);min-
 .honey-btn:hover{background:#b8793a}
 
 /* MODAL OVERLAY */
-.modal-overlay{position:fixed;inset:0;background:rgba(44,44,42,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.modal-overlay{position:absolute;top:0;left:0;width:100%;min-height:100%;background:rgba(44,44,42,0.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:3rem 1rem 4rem;opacity:0;pointer-events:none;transition:opacity 0.25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--cream);border-radius:2px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;transform:translateY(12px);transition:transform 0.25s}
 .modal-overlay.open .modal{transform:translateY(0)}
@@ -469,6 +469,10 @@ function openModal(giftName){
   buildGiftSelect(giftName);
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Scroll page to top so modal is visible, and ask parent frame to do the same
+  window.scrollTo(0,0);
+  try { window.parent.scrollTo(0,0); } catch(e){}
+  try { window.parent.postMessage({scrollTo:0},'*'); } catch(e){}
   setTimeout(function(){ document.getElementById('f-name').focus(); }, 300);
 }
 
