@@ -332,6 +332,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
       <li><a onclick="nav('wedding-party');return false" href="/wedding-party" data-page="wedding-party">Wedding Party</a></li>
       <li><a onclick="nav('our-story');return false" href="/our-story" data-page="our-story">Our Story</a></li>
       <li><a onclick="nav('faq');return false" href="/faq" data-page="faq">FAQ</a></li>
+      <li><a onclick="nav('registry');return false" href="/registry" data-page="registry">Registry</a></li>
       <li><a onclick="nav('community');return false" href="/community" data-page="community" class="games-link">The Board 💬</a></li>
       <li><a onclick="nav('games');return false" href="/games" data-page="games" class="games-link">Games 🎮</a></li>
     </ul>
@@ -347,6 +348,7 @@ body{display:flex;flex-direction:column;background:var(--cream)}
   <a onclick="nav('wedding-party');closeDrawer();return false" href="/wedding-party">Wedding Party</a>
   <a onclick="nav('our-story');closeDrawer();return false" href="/our-story">Our Story</a>
   <a onclick="nav('faq');closeDrawer();return false" href="/faq">FAQ</a>
+  <a onclick="nav('registry');closeDrawer();return false" href="/registry">Registry</a>
   <a onclick="nav('community');closeDrawer();return false" href="/community" style="color:var(--warm-light)">The Board 💬</a>
   <a onclick="nav('games');closeDrawer();return false" href="/games" style="color:var(--warm-light)">Games 🎮</a>
 </nav>
@@ -526,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── Navigation ────────────────────────────────────────────
 var spOpen = false;
 var currentPage = '';
-var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
+var VALID = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community','registry'];
 var frame = document.getElementById('content-frame');
 
 function nav(page, pushState) {
