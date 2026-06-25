@@ -87,40 +87,6 @@ body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);min-
 .honey-btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:var(--warm);color:#fff;border:none;border-radius:2px;font-family:"Jost",sans-serif;font-size:0.65rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;transition:background 0.2s;cursor:pointer}
 .honey-btn:hover{background:#b8793a}
 
-/* MODAL OVERLAY */
-.modal-overlay{position:absolute;top:0;left:0;width:100%;min-height:100%;background:rgba(44,44,42,0.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:3rem 1rem 4rem;opacity:0;pointer-events:none;transition:opacity 0.25s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--cream);border-radius:2px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;transform:translateY(12px);transition:transform 0.25s}
-.modal-overlay.open .modal{transform:translateY(0)}
-.modal-header{padding:1.8rem 2rem 1rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.modal-header h2{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-weight:300;line-height:1.1}
-.modal-header h2 em{color:var(--sage);font-style:italic}
-.modal-close{background:none;border:none;cursor:pointer;color:var(--ink-soft);padding:0.2rem;line-height:1;font-size:1.2rem;flex-shrink:0;margin-top:0.1rem}
-.modal-close:hover{color:var(--ink)}
-.modal-gift-chip{margin:1rem 2rem 0;padding:0.6rem 1rem;background:var(--stone);border-radius:2px;font-size:0.78rem;color:var(--ink-soft);line-height:1.4}
-.modal-gift-chip strong{display:block;font-size:0.82rem;color:var(--ink);font-weight:500;margin-bottom:0.1rem}
-.modal-body{padding:1.4rem 2rem 2rem;display:flex;flex-direction:column;gap:1.1rem}
-.field-group{display:flex;flex-direction:column;gap:0.4rem}
-.field-label{font-size:0.68rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
-.field-label span{color:var(--warm);margin-left:0.15rem}
-.field-input,.field-textarea,.field-select{width:100%;padding:0.75rem 0.9rem;border:1.5px solid var(--line-med);border-radius:2px;background:#fff;font-family:"Jost",sans-serif;font-size:0.9rem;color:var(--ink);outline:none;transition:border-color 0.2s}
-.field-input:focus,.field-textarea:focus,.field-select:focus{border-color:var(--sage)}
-.field-textarea{resize:vertical;min-height:90px;line-height:1.5}
-.field-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' viewBox='0 0 12 8'%3E%3Cpath stroke='%235C5A56' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2.2rem}
-.field-hint{font-size:0.72rem;color:var(--ink-faint);line-height:1.4}
-.monzo-row{display:flex;align-items:center;gap:0.75rem;padding:0.8rem;background:var(--warm-bg);border:1px solid var(--warm-light);border-radius:2px}
-.monzo-row p{font-size:0.78rem;color:var(--ink-soft);line-height:1.5;flex:1}
-.monzo-row a{white-space:nowrap;flex-shrink:0;font-size:0.65rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#fff;background:var(--warm);border-radius:2px;padding:0.4rem 0.75rem;text-decoration:none}
-.monzo-row a:hover{background:#b8793a}
-.submit-btn{padding:0.9rem;background:var(--sage);color:#fff;border:none;border-radius:2px;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;width:100%}
-.submit-btn:hover:not(:disabled){background:var(--sage-light)}
-.submit-btn:disabled{opacity:0.6;cursor:not-allowed}
-.form-success{text-align:center;padding:2.5rem 2rem}
-.form-success .success-icon{font-size:2.5rem;margin-bottom:1rem}
-.form-success h3{font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:300;margin-bottom:0.6rem}
-.form-success p{font-size:0.85rem;color:var(--ink-soft);line-height:1.6}
-.form-error{font-size:0.78rem;color:#a85a20;padding:0.6rem 0.9rem;background:#FEF3EA;border:1px solid var(--warm-light);border-radius:2px}
-
 /* FOOTER */
 .registry-footer{text-align:center;padding:2rem;font-size:0.75rem;color:var(--ink-faint);border-top:1px solid var(--line)}
 .registry-footer a{color:var(--sage);text-decoration:none}
@@ -132,8 +98,6 @@ body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);min-
   .section{padding:0 1.2rem 3rem}
   .honey-banner{flex-direction:column;gap:0.8rem}
   .gift-grid{grid-template-columns:1fr 1fr}
-  .modal-header,.modal-body{padding-left:1.4rem;padding-right:1.4rem}
-  .modal-gift-chip{margin-left:1.4rem;margin-right:1.4rem}
 }
 @media(max-width:420px){.gift-grid{grid-template-columns:1fr}}
 </style>
@@ -213,66 +177,8 @@ body{font-family:"Jost",sans-serif;background:var(--cream);color:var(--ink);min-
   Struggling to buy online? Drop us a message at <a href="mailto:brunoandsally2027@gmail.com">brunoandsally2027@gmail.com</a>
 </div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOnOverlay(event)">
-  <div class="modal" id="modal">
-    <div class="modal-header">
-      <h2>Leave us a <em>message</em></h2>
-      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
-    </div>
-    <div id="modal-gift-chip" class="modal-gift-chip" style="display:none"></div>
-    <div class="modal-body" id="modal-form-body">
-      <div class="field-group">
-        <label class="field-label" for="f-name">Your name <span>*</span></label>
-        <input class="field-input" id="f-name" type="text" placeholder="Jane Smith" autocomplete="name"/>
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="f-email">Email or phone</label>
-        <input class="field-input" id="f-email" type="text" placeholder="jane@example.com" autocomplete="email"/>
-        <p class="field-hint">So we can thank you — we won't spam you, promise.</p>
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="f-gift">Gift you're contributing to <span>*</span></label>
-        <select class="field-select" id="f-gift"></select>
-      </div>
-      <div id="monzo-prompt" style="display:none">
-        <div class="monzo-row">
-          <p>This is a honeymoon fund item — pay any amount via Monzo first, then submit this form.</p>
-          <a href="https://monzo.me/brunorenucci?h=D5OpO6&d=Donation%20to%20Honeymoon%20fund&account_type=joint" target="_blank" rel="noopener">Pay →</a>
-        </div>
-      </div>
-      <div class="field-group" id="amount-field" style="display:none">
-        <label class="field-label" for="f-amount">Amount you're sending</label>
-        <input class="field-input" id="f-amount" type="text" placeholder="e.g. £50"/>
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="f-message">Message for us <span>*</span></label>
-        <textarea class="field-textarea" id="f-message" placeholder="Write something lovely…"></textarea>
-      </div>
-      <div id="form-error" class="form-error" style="display:none"></div>
-      <button class="submit-btn" id="submit-btn" onclick="submitForm()">Send message →</button>
-    </div>
-    <div class="form-success" id="modal-success" style="display:none">
-      <div class="success-icon">💌</div>
-      <h3>Thank you so much!</h3>
-      <p id="success-msg">We've received your message and we're so grateful. We can't wait to celebrate with you.</p>
-    </div>
-  </div>
-</div>
-
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-var FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSd3qbEdw1-2w4Haq-kv6vG7TbMvJxEuFaX8ynMPkErHF0oBQw/formResponse';
-var ENTRY = {
-  name:    'entry.492519388',
-  email:   'entry.61241163',
-  gift:    'entry.330481509',
-  message: 'entry.24251804',
-  payref:  'entry.1049822941',
-  amount:  'entry.1705630575'
-};
-// Responses sheet published as CSV (File > Share > Publish to web > CSV)
-// Replace the URL below with your published CSV link once you've enabled it
 var RESPONSES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJhHW103r7bHqO_Rb-zFrGEtI8ialWYW5oLzf5FsRJjBYvZm9vinSYsWa6fkWvHyaCiWO3GyWPx7gB/pub?output=csv&gid=1928998401';
 
 // ── GIFT DATA ─────────────────────────────────────────────────────────────────
@@ -412,133 +318,23 @@ function filterCat(cat, btn){
   renderGifts(cat);
 }
 
-// ── MODAL ─────────────────────────────────────────────────────────────────────
-var selectedGift = null;
-
-function buildGiftSelect(selected){
-  var sel = document.getElementById('f-gift');
-  sel.innerHTML = '';
-  var placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = '— choose a gift —';
-  sel.appendChild(placeholder);
-  GIFTS.forEach(function(g){
-    var opt = document.createElement('option');
-    opt.value = g.name;
-    opt.textContent = g.name;
-    if(g.name === selected) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  updateMonzoPrompt();
-}
-
-function updateMonzoPrompt(){
-  var sel = document.getElementById('f-gift');
-  var gift = GIFTS.find(function(g){ return g.name === sel.value; });
-  var isMonzo = gift && gift.monzo;
-  document.getElementById('monzo-prompt').style.display = isMonzo ? 'block' : 'none';
-  document.getElementById('amount-field').style.display = isMonzo ? 'block' : 'none';
-}
-
+// ── OPEN MODAL: tell parent to show it ───────────────────────────────────────
 function openModal(giftName){
-  selectedGift = giftName || null;
-  var overlay = document.getElementById('modal-overlay');
-  var chip = document.getElementById('modal-gift-chip');
-  var formBody = document.getElementById('modal-form-body');
-  var success = document.getElementById('modal-success');
-  var err = document.getElementById('form-error');
-
-  // Reset state
-  formBody.style.display = 'flex';
-  success.style.display = 'none';
-  err.style.display = 'none';
-  document.getElementById('submit-btn').disabled = false;
-  document.getElementById('f-name').value = '';
-  document.getElementById('f-email').value = '';
-  document.getElementById('f-message').value = '';
-  document.getElementById('f-amount').value = '';
-
-  if(giftName){
-    var g = GIFTS.find(function(x){ return x.name === giftName; });
-    chip.style.display = 'block';
-    chip.innerHTML = '<strong>' + giftName + '</strong>' + (g ? g.price : '');
-  } else {
-    chip.style.display = 'none';
-  }
-
-  buildGiftSelect(giftName);
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-  // Scroll page to top so modal is visible, and ask parent frame to do the same
-  window.scrollTo(0,0);
-  try { window.parent.scrollTo(0,0); } catch(e){}
-  try { window.parent.postMessage({scrollTo:0},'*'); } catch(e){}
-  setTimeout(function(){ document.getElementById('f-name').focus(); }, 300);
+  var g = GIFTS.find(function(x){ return x.name === giftName; });
+  try {
+    window.parent.postMessage({type:'openRegistryModal', gift: giftName, price: g ? g.price : ''}, '*');
+  } catch(e) {}
 }
 
-function closeModal(){
-  document.getElementById('modal-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function closeModalOnOverlay(e){
-  if(e.target === document.getElementById('modal-overlay')) closeModal();
-}
-
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
-
-// Watch gift select change for monzo prompt
-document.getElementById('f-gift').addEventListener('change', updateMonzoPrompt);
-
-// ── SUBMIT ────────────────────────────────────────────────────────────────────
-function submitForm(){
-  var name = document.getElementById('f-name').value.trim();
-  var email = document.getElementById('f-email').value.trim();
-  var gift = document.getElementById('f-gift').value;
-  var message = document.getElementById('f-message').value.trim();
-  var amount = document.getElementById('f-amount').value.trim();
-  var errEl = document.getElementById('form-error');
-
-  errEl.style.display = 'none';
-  if(!name){ errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
-  if(!gift){ errEl.textContent = 'Please select a gift.'; errEl.style.display = 'block'; return; }
-  if(!message){ errEl.textContent = 'Please leave us a message — even a short one!'; errEl.style.display = 'block'; return; }
-
-  var btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-
-  var body = ENTRY.name + '=' + encodeURIComponent(name)
-    + '&' + ENTRY.email + '=' + encodeURIComponent(email)
-    + '&' + ENTRY.gift + '=' + encodeURIComponent(gift)
-    + '&' + ENTRY.message + '=' + encodeURIComponent(message)
-    + '&' + ENTRY.payref + '=' + encodeURIComponent('')
-    + '&' + ENTRY.amount + '=' + encodeURIComponent(amount);
-
-  fetch(FORM_ACTION, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: body
-  }).then(function(){
-    // Mark claimed locally immediately (before CSV refreshes)
-    if(claimedNames.indexOf(normName(gift)) === -1){
-      claimedNames.push(normName(gift));
+// ── LISTEN for markClaimed back from parent after successful submit ───────────
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'markClaimed'){
+    if(claimedNames.indexOf(normName(e.data.gift)) === -1){
+      claimedNames.push(normName(e.data.gift));
     }
     renderGifts(currentCat);
-    document.getElementById('modal-form-body').style.display = 'none';
-    document.getElementById('modal-gift-chip').style.display = 'none';
-    var successEl = document.getElementById('modal-success');
-    successEl.style.display = 'block';
-    document.getElementById('success-msg').textContent =
-      'We\'ve received your message about the ' + gift + ' — we\'re so grateful. We can\'t wait to celebrate with you.';
-  }).catch(function(){
-    btn.disabled = false;
-    btn.textContent = 'Send message →';
-    errEl.textContent = 'Something went wrong — please try again or email us directly.';
-    errEl.style.display = 'block';
-  });
-}
+  }
+});
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadClaimed();

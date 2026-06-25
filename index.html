@@ -261,6 +261,41 @@ body{display:flex;flex-direction:column;background:var(--cream)}
   .nav-drawer{display:flex}
   .nav-burger{display:block}
 }
+
+/* ── REGISTRY MODAL ── */
+#reg-modal-overlay{position:fixed;inset:0;background:rgba(44,44,42,0.6);z-index:9000;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.25s}
+#reg-modal-overlay.open{opacity:1;pointer-events:all}
+#reg-modal{background:#FAF8F3;border-radius:2px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;transform:translateY(14px);transition:transform 0.25s;font-family:"Jost",sans-serif}
+#reg-modal-overlay.open #reg-modal{transform:translateY(0)}
+.rm-header{padding:1.8rem 2rem 1rem;border-bottom:1px solid rgba(44,44,42,0.1);display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.rm-header h2{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-weight:300;line-height:1.1;color:#2C2C2A}
+.rm-header h2 em{color:#5C7A5C;font-style:italic}
+.rm-close{background:none;border:none;cursor:pointer;color:#5C5A56;font-size:1.2rem;padding:0.2rem;line-height:1;flex-shrink:0;margin-top:0.1rem}
+.rm-close:hover{color:#2C2C2A}
+.rm-chip{margin:1rem 2rem 0;padding:0.6rem 1rem;background:#F0EBE1;border-radius:2px;font-size:0.78rem;color:#5C5A56;line-height:1.4}
+.rm-chip strong{display:block;font-size:0.82rem;color:#2C2C2A;font-weight:500;margin-bottom:0.1rem}
+.rm-body{padding:1.4rem 2rem 2rem;display:flex;flex-direction:column;gap:1.1rem}
+.rm-field{display:flex;flex-direction:column}
+.rm-label{font-size:0.68rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#5C5A56;margin-bottom:0.4rem}
+.rm-label span{color:#C4894A;margin-left:0.15rem}
+.rm-input,.rm-textarea,.rm-select{width:100%;padding:0.75rem 0.9rem;border:1.5px solid rgba(44,44,42,0.16);border-radius:2px;background:#fff;font-family:"Jost",sans-serif;font-size:0.9rem;color:#2C2C2A;outline:none;transition:border-color 0.2s;box-sizing:border-box}
+.rm-input:focus,.rm-textarea:focus,.rm-select:focus{border-color:#5C7A5C}
+.rm-textarea{resize:vertical;min-height:90px;line-height:1.5}
+.rm-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' viewBox='0 0 12 8'%3E%3Cpath stroke='%235C5A56' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2.2rem}
+.rm-hint{font-size:0.72rem;color:#9C9A94;line-height:1.4;margin-top:0.25rem}
+.rm-monzo{display:flex;align-items:center;gap:0.75rem;padding:0.8rem;background:#FBF3EA;border:1px solid #E8C49A;border-radius:2px}
+.rm-monzo p{font-size:0.78rem;color:#5C5A56;line-height:1.5;flex:1;margin:0}
+.rm-monzo a{white-space:nowrap;flex-shrink:0;font-size:0.65rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#fff;background:#C4894A;border-radius:2px;padding:0.4rem 0.75rem;text-decoration:none}
+.rm-monzo a:hover{background:#b8793a}
+.rm-submit{padding:0.9rem;background:#5C7A5C;color:#fff;border:none;border-radius:2px;font-family:"Jost",sans-serif;font-size:0.72rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;width:100%}
+.rm-submit:hover:not(:disabled){background:#8FA882}
+.rm-submit:disabled{opacity:0.6;cursor:not-allowed}
+.rm-error{font-size:0.78rem;color:#a85a20;padding:0.6rem 0.9rem;background:#FEF3EA;border:1px solid #E8C49A;border-radius:2px}
+.rm-success{text-align:center;padding:2.5rem 2rem}
+.rm-success-icon{font-size:2.5rem;margin-bottom:1rem}
+.rm-success h3{font-family:"Cormorant Garamond",serif;font-size:1.5rem;font-weight:300;margin-bottom:0.6rem;color:#2C2C2A}
+.rm-success p{font-size:0.85rem;color:#5C5A56;line-height:1.6}
+@media(max-width:600px){.rm-header,.rm-body{padding-left:1.4rem;padding-right:1.4rem}.rm-chip{margin-left:1.4rem;margin-right:1.4rem}}
 </style>
 </head>
 <body>
@@ -604,6 +639,160 @@ document.querySelectorAll('[data-page]').forEach(function(a) {
 });
 history.replaceState({page:initPage}, '', '/' + initPage);
 document.getElementById('content-frame').src = '/' + initPage;
+<!-- ── REGISTRY MODAL ── -->
+<div id="reg-modal-overlay" onclick="regCloseOnOverlay(event)">
+  <div id="reg-modal">
+    <div class="rm-header">
+      <h2>Leave us a <em>message</em></h2>
+      <button class="rm-close" onclick="regCloseModal()" aria-label="Close">&#x2715;</button>
+    </div>
+    <div id="rm-chip" class="rm-chip" style="display:none"></div>
+    <div id="rm-form" class="rm-body">
+      <div class="rm-field">
+        <label class="rm-label" for="rm-name">Your name <span>*</span></label>
+        <input class="rm-input" id="rm-name" type="text" placeholder="Jane Smith" autocomplete="name"/>
+      </div>
+      <div class="rm-field">
+        <label class="rm-label" for="rm-email">Email or phone</label>
+        <input class="rm-input" id="rm-email" type="text" placeholder="jane@example.com" autocomplete="email"/>
+        <p class="rm-hint">So we can thank you — we won't spam you, promise.</p>
+      </div>
+      <div class="rm-field">
+        <label class="rm-label" for="rm-gift">Gift you're contributing to <span>*</span></label>
+        <select class="rm-select" id="rm-gift" onchange="regUpdateMonzo()"></select>
+      </div>
+      <div id="rm-monzo-row" style="display:none">
+        <div class="rm-monzo">
+          <p>This is a honeymoon fund item — please pay via Monzo first, then submit this form.</p>
+          <a href="https://monzo.me/brunorenucci?h=D5OpO6&d=Donation%20to%20Honeymoon%20fund&account_type=joint" target="_blank" rel="noopener">Pay &rarr;</a>
+        </div>
+      </div>
+      <div class="rm-field" id="rm-amount-field" style="display:none">
+        <label class="rm-label" for="rm-amount">Amount you're sending</label>
+        <input class="rm-input" id="rm-amount" type="text" placeholder="e.g. £50"/>
+      </div>
+      <div class="rm-field">
+        <label class="rm-label" for="rm-message">Message for us <span>*</span></label>
+        <textarea class="rm-textarea" id="rm-message" placeholder="Write something lovely…"></textarea>
+      </div>
+      <div id="rm-error" class="rm-error" style="display:none"></div>
+      <button class="rm-submit" id="rm-submit" onclick="regSubmit()">Send message &rarr;</button>
+    </div>
+    <div id="rm-success" class="rm-success" style="display:none">
+      <div class="rm-success-icon">&#x1F48C;</div>
+      <h3>Thank you so much!</h3>
+      <p id="rm-success-msg">We've received your message and we're so grateful.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── REGISTRY MODAL (lives in parent to avoid iframe clipping) ─────────────────
+var RM_FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSd3qbEdw1-2w4Haq-kv6vG7TbMvJxEuFaX8ynMPkErHF0oBQw/formResponse';
+var RM_ENTRY = {name:'entry.492519388',email:'entry.61241163',gift:'entry.330481509',message:'entry.24251804',payref:'entry.1049822941',amount:'entry.1705630575'};
+var RM_GIFTS = ["Le Creuset Casserole Dish","KitchenAid Stand Mixer","Sage Barista Express","Vitamix Blender","Global Knife Set","Cast Iron Skillet","Copper Saucepan Set","Pasta Maker","Spice Collection","Ottolenghi Cookbook Bundle","Luxury Goose Down Duvet","Linen Bedding Set","Luxury Bath Towel Set (x4)","Merino Throw Blankets","Dyson Cordless Hoover","Diptyque Candle Set","Reed Diffuser","Gallery Photo Frames Set","Wine Fridge (12-bottle)","Riedel Wine Glasses (x12)","Cocktail Making Set","Marble Cheese Board Set","Linen Napkins & Tablecloth","Dinner Plate Set (x8)","Champagne Flutes (x6)","Sony RX100 VII Camera","Arc'teryx Shell Jacket","Garmin Running Watch","Ski Helmet Upgrade","Trail Running Shoes","Merino Base Layers","Osprey Daypacks (x2)","Waterproof Drybags","Travel Packing Cubes Set","Sonos Era 100","Robot Vacuum","Noise-Cancelling Headphones (x2)","Anker MagSafe 3-in-1 Charger","Portable Power Bank","Original Artwork Commission","Statement Floor Lamp","Framed Prints Set","Ceramic Vases (trio)","Large Plant + Ceramic Pot","Coffee Table Books","Honeymoon Flights","One Night Hotel Upgrade","Michelin Dinner for Two","Spa Day for Two","Adventure Excursion","Matching Luggage Set","Noise-Cancelling Headphones"];
+var RM_MONZO_GIFTS = ["Honeymoon Flights","One Night Hotel Upgrade","Michelin Dinner for Two","Spa Day for Two","Adventure Excursion"];
+
+// Listen for openModal message from registry iframe
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.nav && VALID.indexOf(e.data.nav) >= 0) { nav(e.data.nav); }
+  if (e.data && typeof e.data.scrollTo === 'number') { window.scrollTo(0, e.data.scrollTo); }
+  if (e.data && e.data.type === 'openRegistryModal') { regOpenModal(e.data.gift, e.data.price); }
+  if (e.data && e.data.type === 'giftClaimed') { /* registry handles its own UI */ }
+});
+
+function regOpenModal(giftName, giftPrice) {
+  // Reset
+  document.getElementById('rm-form').style.display = 'flex';
+  document.getElementById('rm-success').style.display = 'none';
+  document.getElementById('rm-error').style.display = 'none';
+  document.getElementById('rm-name').value = '';
+  document.getElementById('rm-email').value = '';
+  document.getElementById('rm-message').value = '';
+  document.getElementById('rm-amount').value = '';
+  var btn = document.getElementById('rm-submit');
+  btn.disabled = false; btn.textContent = 'Send message \u2192';
+
+  // Chip
+  var chip = document.getElementById('rm-chip');
+  if (giftName) {
+    chip.style.display = 'block';
+    chip.innerHTML = '<strong>' + giftName + '</strong>' + (giftPrice || '');
+  } else { chip.style.display = 'none'; }
+
+  // Populate select
+  var sel = document.getElementById('rm-gift');
+  sel.innerHTML = '<option value="">— choose a gift —</option>';
+  RM_GIFTS.forEach(function(g) {
+    var opt = document.createElement('option');
+    opt.value = g; opt.textContent = g;
+    if (g === giftName) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  regUpdateMonzo();
+
+  document.getElementById('reg-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(function(){ document.getElementById('rm-name').focus(); }, 280);
+}
+
+function regUpdateMonzo() {
+  var val = document.getElementById('rm-gift').value;
+  var isMonzo = RM_MONZO_GIFTS.indexOf(val) !== -1;
+  document.getElementById('rm-monzo-row').style.display = isMonzo ? 'block' : 'none';
+  document.getElementById('rm-amount-field').style.display = isMonzo ? 'block' : 'none';
+}
+
+function regCloseModal() {
+  document.getElementById('reg-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function regCloseOnOverlay(e) {
+  if (e.target === document.getElementById('reg-modal-overlay')) regCloseModal();
+}
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') regCloseModal(); });
+
+function regSubmit() {
+  var name = document.getElementById('rm-name').value.trim();
+  var email = document.getElementById('rm-email').value.trim();
+  var gift = document.getElementById('rm-gift').value;
+  var message = document.getElementById('rm-message').value.trim();
+  var amount = document.getElementById('rm-amount').value.trim();
+  var errEl = document.getElementById('rm-error');
+  errEl.style.display = 'none';
+
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  if (!gift) { errEl.textContent = 'Please select a gift.'; errEl.style.display = 'block'; return; }
+  if (!message) { errEl.textContent = 'Please leave us a message — even a short one!'; errEl.style.display = 'block'; return; }
+
+  var btn = document.getElementById('rm-submit');
+  btn.disabled = true; btn.textContent = 'Sending\u2026';
+
+  var body = RM_ENTRY.name + '=' + encodeURIComponent(name)
+    + '&' + RM_ENTRY.email + '=' + encodeURIComponent(email)
+    + '&' + RM_ENTRY.gift + '=' + encodeURIComponent(gift)
+    + '&' + RM_ENTRY.message + '=' + encodeURIComponent(message)
+    + '&' + RM_ENTRY.payref + '=' + encodeURIComponent('')
+    + '&' + RM_ENTRY.amount + '=' + encodeURIComponent(amount);
+
+  fetch(RM_FORM_ACTION, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+    .then(function() {
+      // Tell the registry iframe to mark this gift as claimed
+      try { document.getElementById('content-frame').contentWindow.postMessage({type:'markClaimed',gift:gift}, '*'); } catch(e){}
+      document.getElementById('rm-form').style.display = 'none';
+      document.getElementById('rm-chip').style.display = 'none';
+      var s = document.getElementById('rm-success');
+      s.style.display = 'block';
+      document.getElementById('rm-success-msg').textContent = 'We\'ve received your message about the ' + gift + ' — we\'re so grateful. We can\'t wait to celebrate with you.';
+    })
+    .catch(function() {
+      btn.disabled = false; btn.textContent = 'Send message \u2192';
+      errEl.textContent = 'Something went wrong — please try again or email us directly.';
+      errEl.style.display = 'block';
+    });
+}
 </script>
 </body>
 </html>
