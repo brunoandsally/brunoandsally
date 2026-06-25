@@ -49,21 +49,29 @@ body{
   line-height:1.7;
 }
 
-/* ── COMING SOON BANNER ── */
-.coming-soon{
-  display:inline-flex;align-items:center;gap:0.6rem;
+/* ── UNDER DEVELOPMENT BANNER ── */
+.dev-banner{
+  display:flex;align-items:flex-start;gap:1rem;
   background:var(--warm-bg);
-  border:1px solid var(--warm-light);
+  border:1.5px solid var(--warm-light);
   border-radius:2px;
-  padding:0.75rem 1.2rem;
-  font-size:0.75rem;font-weight:600;letter-spacing:0.14em;
-  text-transform:uppercase;color:var(--warm);
-  margin-bottom:0;
+  padding:1.1rem 1.4rem;
+  max-width:560px;margin:0 auto;
+  text-align:left;
 }
-.coming-soon::before{
-  content:"";display:block;width:6px;height:6px;
-  border-radius:50%;background:var(--warm);
+.dev-banner-dot{
+  flex-shrink:0;margin-top:0.25rem;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--warm);
   animation:pulse 2s ease-in-out infinite;
+}
+.dev-banner-title{
+  font-size:0.72rem;font-weight:600;letter-spacing:0.16em;
+  text-transform:uppercase;color:var(--warm);
+  margin-bottom:0.3rem;
+}
+.dev-banner-text{
+  font-size:0.82rem;color:var(--ink-soft);line-height:1.55;
 }
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
 
@@ -296,7 +304,13 @@ body{
   <p class="hero-eyebrow">Bruno &amp; Sally · 18 September 2027</p>
   <h1>Our <em>registry</em></h1>
   <p class="hero-sub">Your presence at our wedding is the greatest gift. But if you'd like to give something, here's what we'd love.</p>
-  <div class="coming-soon">Registry coming soon — check back closer to the wedding</div>
+  <div class="dev-banner">
+    <div class="dev-banner-dot"></div>
+    <div>
+      <p class="dev-banner-title">Page under development</p>
+      <p class="dev-banner-text">We're still finalising our registry — the gift list below is a preview and some links may change. We'll let you know when everything is confirmed. In the meantime, feel free to browse.</p>
+    </div>
+  </div>
 </div>
 
 <!-- ACTION CARDS -->
@@ -315,24 +329,10 @@ body{
   </div>
 
   <div class="action-card">
-    <div class="action-icon warm">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-    </div>
-    <p class="action-eyebrow">Step 2 — Honeymoon</p>
-    <h3 class="action-title">Contribute to our honeymoon</h3>
-    <p class="action-desc">Pay any amount via Monzo — the link is pre-set to our joint account. Then let us know what it's for via the gift register form.</p>
-    <a href="https://monzo.me/brunorenucci?h=D5OpO6&d=Donation%20to%20Honeymoon%20fund&account_type=joint"
-       target="_blank" rel="noopener" class="action-btn secondary">
-      Pay via Monzo
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-    </a>
-  </div>
-
-  <div class="action-card">
     <div class="action-icon sage">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
     </div>
-    <p class="action-eyebrow">Step 3</p>
+    <p class="action-eyebrow">Step 2</p>
     <h3 class="action-title">Leave a message</h3>
     <p class="action-desc">Tell us which gift you've chosen and leave us a note. This helps us keep track and means we can thank you properly.</p>
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSd3qbEdw1-2w4Haq-kv6vG7TbMvJxEuFaX8ynMPkErHF0oBQw/viewform"
