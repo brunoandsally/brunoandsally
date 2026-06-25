@@ -7,7 +7,7 @@
 // GitHub Pages 404 trick: save the path and redirect to shell
 var path = window.location.pathname;
 var page = path.replace(/^\//, '').split('/')[0];
-var valid = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community'];
+var valid = ['home','the-day','our-story','rsvp','faq','wedding-party','day-after','games','community','registry'];
 var dest = valid.indexOf(page) >= 0 ? page : 'home';
 // Store where we wanted to go, then go to root shell
 sessionStorage.setItem('redirect-page', dest);

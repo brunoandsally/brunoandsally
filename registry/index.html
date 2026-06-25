@@ -321,9 +321,19 @@ function filterCat(cat, btn){
 // ── OPEN MODAL: tell parent to show it ───────────────────────────────────────
 function openModal(giftName){
   var g = GIFTS.find(function(x){ return x.name === giftName; });
+  var price = g ? g.price : '';
+  // If running inside an iframe, message the parent shell
+  // If window.parent has regOpenModal directly (same origin), call it
   try {
-    window.parent.postMessage({type:'openRegistryModal', gift: giftName, price: g ? g.price : ''}, '*');
-  } catch(e) {}
+    if (window.parent !== window && typeof window.parent.regOpenModal === 'function') {
+      window.parent.regOpenModal(giftName, price);
+    } else {
+      window.parent.postMessage({type:'openRegistryModal', gift: giftName, price: price}, '*');
+    }
+  } catch(e) {
+    // Fallback: shouldn't happen in normal flow
+    window.postMessage({type:'openRegistryModal', gift: giftName, price: price}, '*');
+  }
 }
 
 // ── LISTEN for markClaimed back from parent after successful submit ───────────
